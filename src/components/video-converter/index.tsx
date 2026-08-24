@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import {
   type VideoFormat,
   VIDEO_FORMATS,
@@ -50,6 +50,7 @@ export function VideoConverter({
   const [conversionStatusText, setConversionStatusText] = useState("");
   const [conversionResult, setConversionResult] = useState<VideoConversionResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Sync initialFile
   useEffect(() => {
@@ -118,19 +119,30 @@ export function VideoConverter({
     setConversionStatusText("");
   }, [file, targetFormat, options]);
 
+  const handleCancel = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsConverting(false);
+    setConversionProgress(0);
+    setConversionStatusText("");
+  }, []);
+
   const handleRemove = useCallback(() => {
+    handleCancel();
     setFile(null);
     setVideoElement(null);
     setMetadata(null);
     setConversionResult(null);
     setErrorMsg(null);
-    setConversionProgress(0);
-    setConversionStatusText("");
     if (onClearInitialFile) onClearInitialFile();
-  }, [onClearInitialFile]);
+  }, [handleCancel, onClearInitialFile]);
 
   const handleConvert = useCallback(async () => {
     if (!videoElement || !file) return;
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
     setIsConverting(true);
     setErrorMsg(null);
     setConversionProgress(5);
@@ -147,12 +159,19 @@ export function VideoConverter({
         (progress, text) => {
           setConversionProgress(progress);
           setConversionStatusText(text);
-        }
+        },
+        controller.signal
       );
       setConversionResult(res);
       setConversionProgress(100);
       setIsConverting(false);
     } catch (err) {
+      if (controller.signal.aborted) {
+        setIsConverting(false);
+        setConversionProgress(0);
+        setConversionStatusText("");
+        return;
+      }
       console.error("Conversion error:", err);
       setErrorMsg(err instanceof Error ? err.message : "Video conversion failed");
       setIsConverting(false);
@@ -227,6 +246,7 @@ export function VideoConverter({
               resultBlob={conversionResult?.blob || null}
               outputName={outputName}
               onConvert={handleConvert}
+              onCancel={handleCancel}
             />
 
             {errorMsg && (

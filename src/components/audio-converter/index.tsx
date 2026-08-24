@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import {
   type AudioFormat,
   AUDIO_FORMATS,
@@ -49,6 +49,7 @@ export function AudioConverter({
   const [conversionStatusText, setConversionStatusText] = useState("");
   const [conversionResult, setConversionResult] = useState<AudioConversionResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const isCancelledRef = useRef(false);
 
   // Sync initialFile
   useEffect(() => {
@@ -108,19 +109,26 @@ export function AudioConverter({
     setConversionStatusText("");
   }, [file, targetFormat, options]);
 
+  const handleCancel = useCallback(() => {
+    isCancelledRef.current = true;
+    setIsConverting(false);
+    setConversionProgress(0);
+    setConversionStatusText("");
+  }, []);
+
   const handleRemove = useCallback(() => {
+    handleCancel();
     setFile(null);
     setAudioBuffer(null);
     setMetadata(null);
     setConversionResult(null);
     setErrorMsg(null);
-    setConversionProgress(0);
-    setConversionStatusText("");
     if (onClearInitialFile) onClearInitialFile();
-  }, [onClearInitialFile]);
+  }, [handleCancel, onClearInitialFile]);
 
   const handleConvert = useCallback(async () => {
     if (!audioBuffer || !file) return;
+    isCancelledRef.current = false;
     setIsConverting(true);
     setErrorMsg(null);
     setConversionProgress(10);
@@ -135,14 +143,18 @@ export function AudioConverter({
           format: targetFormat,
         },
         (progress, text) => {
-          setConversionProgress(progress);
-          setConversionStatusText(text);
+          if (!isCancelledRef.current) {
+            setConversionProgress(progress);
+            setConversionStatusText(text);
+          }
         }
       );
+      if (isCancelledRef.current) return;
       setConversionResult(res);
       setConversionProgress(100);
       setIsConverting(false);
     } catch (err) {
+      if (isCancelledRef.current) return;
       console.error("Conversion error:", err);
       setErrorMsg(err instanceof Error ? err.message : "Audio conversion failed");
       setIsConverting(false);
@@ -217,6 +229,7 @@ export function AudioConverter({
               resultBlob={conversionResult?.blob || null}
               outputName={outputName}
               onConvert={handleConvert}
+              onCancel={handleCancel}
             />
 
             {errorMsg && (

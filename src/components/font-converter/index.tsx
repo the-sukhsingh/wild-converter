@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import {
   type FontFormat,
   FONT_FORMATS,
@@ -48,6 +48,7 @@ export function FontConverter({
   const [conversionStatusText, setConversionStatusText] = useState("");
   const [conversionResult, setConversionResult] = useState<FontConversionResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const isCancelledRef = useRef(false);
 
   // Sync initialFile
   useEffect(() => {
@@ -110,19 +111,26 @@ export function FontConverter({
     setConversionStatusText("");
   }, [file, targetFormat, options]);
 
+  const handleCancel = useCallback(() => {
+    isCancelledRef.current = true;
+    setIsConverting(false);
+    setConversionProgress(0);
+    setConversionStatusText("");
+  }, []);
+
   const handleRemove = useCallback(() => {
+    handleCancel();
     setFile(null);
     setFont(null);
     setMetadata(null);
     setConversionResult(null);
     setErrorMsg(null);
-    setConversionProgress(0);
-    setConversionStatusText("");
     if (onClearInitialFile) onClearInitialFile();
-  }, [onClearInitialFile]);
+  }, [handleCancel, onClearInitialFile]);
 
   const handleConvert = useCallback(async () => {
     if (!font || !file || !metadata) return;
+    isCancelledRef.current = false;
     setIsConverting(true);
     setErrorMsg(null);
     setConversionProgress(25);
@@ -135,10 +143,12 @@ export function FontConverter({
         ...options,
         format: targetFormat,
       });
+      if (isCancelledRef.current) return;
       setConversionResult(res);
       setConversionProgress(100);
       setIsConverting(false);
     } catch (err) {
+      if (isCancelledRef.current) return;
       console.error("Conversion error:", err);
       setErrorMsg(err instanceof Error ? err.message : "Font compilation failed");
       setIsConverting(false);
@@ -213,6 +223,7 @@ export function FontConverter({
               resultBlob={conversionResult?.blob || null}
               outputName={outputName}
               onConvert={handleConvert}
+              onCancel={handleCancel}
             />
 
             {errorMsg && (

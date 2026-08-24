@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import {
   type VectorFormat,
   VECTOR_FORMATS,
@@ -49,6 +49,7 @@ export function VectorConverter({
   const [conversionStatusText, setConversionStatusText] = useState("");
   const [conversionResult, setConversionResult] = useState<VectorConversionResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const isCancelledRef = useRef(false);
 
   // Sync initialFile
   useEffect(() => {
@@ -111,18 +112,25 @@ export function VectorConverter({
     setConversionStatusText("");
   }, [file, targetFormat, options]);
 
+  const handleCancel = useCallback(() => {
+    isCancelledRef.current = true;
+    setIsConverting(false);
+    setConversionProgress(0);
+    setConversionStatusText("");
+  }, []);
+
   const handleRemove = useCallback(() => {
+    handleCancel();
     setFile(null);
     setMetadata(null);
     setConversionResult(null);
     setErrorMsg(null);
-    setConversionProgress(0);
-    setConversionStatusText("");
     if (onClearInitialFile) onClearInitialFile();
-  }, [onClearInitialFile]);
+  }, [handleCancel, onClearInitialFile]);
 
   const handleConvert = useCallback(async () => {
     if (!file || !metadata) return;
+    isCancelledRef.current = false;
     setIsConverting(true);
     setErrorMsg(null);
     setConversionProgress(20);
@@ -135,10 +143,12 @@ export function VectorConverter({
         ...options,
         format: targetFormat,
       });
+      if (isCancelledRef.current) return;
       setConversionResult(res);
       setConversionProgress(100);
       setIsConverting(false);
     } catch (err) {
+      if (isCancelledRef.current) return;
       console.error("Conversion error:", err);
       setErrorMsg(err instanceof Error ? err.message : "Vector conversion failed");
       setIsConverting(false);
@@ -213,6 +223,7 @@ export function VectorConverter({
               resultBlob={conversionResult?.blob || null}
               outputName={outputName}
               onConvert={handleConvert}
+              onCancel={handleCancel}
             />
 
             {errorMsg && (

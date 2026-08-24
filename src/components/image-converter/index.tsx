@@ -5,6 +5,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  useRef,
 } from "react";
 import {
   type ImageFormat,
@@ -133,7 +134,17 @@ export function ImageConverter({ initialFile, onClearInitialFile }: ImageConvert
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [file, targetFormat, options.quality, options.width, options.height, options.lockAspect]);
 
+  const isCancelledRef = useRef(false);
+
+  const handleCancel = useCallback(() => {
+    isCancelledRef.current = true;
+    setState("idle");
+    setConversionProgress(0);
+    setConversionStatusText("");
+  }, []);
+
   const handleRemove = useCallback(() => {
+    handleCancel();
     setFile(null);
     setInputFormat(null);
     setImageDimensions(null);
@@ -144,13 +155,12 @@ export function ImageConverter({ initialFile, onClearInitialFile }: ImageConvert
     setResultBlob(null);
     setState("idle");
     setErrorMsg(null);
-    setConversionProgress(0);
-    setConversionStatusText("");
     if (onClearInitialFile) onClearInitialFile();
-  }, [resultUrl, onClearInitialFile]);
+  }, [handleCancel, resultUrl, onClearInitialFile]);
 
   const handleConvert = useCallback(async () => {
     if (!file) return;
+    isCancelledRef.current = false;
     setState("converting");
     setErrorMsg(null);
     setConversionProgress(25);
@@ -163,12 +173,14 @@ export function ImageConverter({ initialFile, onClearInitialFile }: ImageConvert
         setConversionStatusText(`Encoding ${targetFormat.toUpperCase()} stream...`);
         blob = await convertImage(file, targetFormat, options);
       }
+      if (isCancelledRef.current) return;
       const url = URL.createObjectURL(blob);
       setResultBlob(blob);
       setResultUrl(url);
       setConversionProgress(100);
       setState("done");
     } catch (err) {
+      if (isCancelledRef.current) return;
       setErrorMsg(err instanceof Error ? err.message : "Conversion failed");
       setState("error");
     }
@@ -245,6 +257,7 @@ export function ImageConverter({ initialFile, onClearInitialFile }: ImageConvert
               resultBlob={resultBlob}
               outputName={outputName}
               onConvert={handleConvert}
+              onCancel={handleCancel}
             />
 
             {errorMsg && (

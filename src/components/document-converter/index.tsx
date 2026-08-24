@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import {
   type DocumentFormat,
   detectDocumentFormat,
@@ -155,7 +155,17 @@ export function DocumentConverter({
     setConversionStatusText("");
   }, [file, targetFormat, options]);
 
+  const isCancelledRef = useRef(false);
+
+  const handleCancel = useCallback(() => {
+    isCancelledRef.current = true;
+    setIsConverting(false);
+    setConversionProgress(0);
+    setConversionStatusText("");
+  }, []);
+
   const handleRemove = useCallback(() => {
+    handleCancel();
     setFile(null);
     setInputFormat(null);
     setDocumentIR(null);
@@ -163,13 +173,12 @@ export function DocumentConverter({
     setProbedResult(null);
     setConversionResult(null);
     setErrorMsg(null);
-    setConversionProgress(0);
-    setConversionStatusText("");
     if (onClearInitialFile) onClearInitialFile();
-  }, [onClearInitialFile]);
+  }, [handleCancel, onClearInitialFile]);
 
   const handleConvert = useCallback(async () => {
     if (!file) return;
+    isCancelledRef.current = false;
     setIsConverting(true);
     setErrorMsg(null);
     setConversionProgress(15);
@@ -179,14 +188,18 @@ export function DocumentConverter({
       let result = probedResult;
       if (!result) {
         result = await convertDocument(file, targetFormat, options, (progress, text) => {
-          setConversionProgress(progress);
-          setConversionStatusText(text);
+          if (!isCancelledRef.current) {
+            setConversionProgress(progress);
+            setConversionStatusText(text);
+          }
         });
       }
+      if (isCancelledRef.current) return;
       setConversionResult(result);
       setConversionProgress(100);
       setIsConverting(false);
     } catch (err) {
+      if (isCancelledRef.current) return;
       console.error("Conversion error:", err);
       setErrorMsg(err instanceof Error ? err.message : "Document conversion failed");
       setIsConverting(false);
@@ -268,6 +281,7 @@ export function DocumentConverter({
               resultBlob={conversionResult?.blob || null}
               outputName={outputName}
               onConvert={handleConvert}
+              onCancel={handleCancel}
             />
 
             {errorMsg && (

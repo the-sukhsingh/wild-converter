@@ -248,17 +248,22 @@ function encodeGifFrames(
 }
 
 /**
- * Master video conversion orchestrator
+ * Master video conversion orchestrator with cancellation support
  */
 export async function convertVideo(
   video: HTMLVideoElement,
   originalFileName: string,
   options: VideoConversionOptions,
-  onProgress?: (progress: number, text: string) => void
+  onProgress?: (progress: number, text: string) => void,
+  signal?: AbortSignal
 ): Promise<VideoConversionResult> {
   const formatInfo = VIDEO_FORMATS[options.format] || VIDEO_FORMATS.mp4;
   const baseName = originalFileName.replace(/\.[^/.]+$/, "");
   const outputFileName = `${baseName}.${formatInfo.extension}`;
+
+  if (signal?.aborted) {
+    throw new Error("Conversion cancelled by user");
+  }
 
   const { width, height } = calculateTargetDimensions(
     video.videoWidth || 1920,
@@ -279,6 +284,11 @@ export async function convertVideo(
     const duration = Math.min(video.duration, 60);
     const audioBuffer = audioCtx.createBuffer(2, sampleRate * duration, sampleRate);
     onProgress?.(60, "Encoding audio PCM stream...");
+
+    if (signal?.aborted) {
+      audioCtx.close();
+      throw new Error("Conversion cancelled by user");
+    }
 
     const wavBlob = encodeWAV(audioBuffer, 16);
     onProgress?.(100, "Done");
@@ -313,6 +323,9 @@ export async function convertVideo(
     video.currentTime = 0;
 
     for (let f = 0; f < totalFrames; f++) {
+      if (signal?.aborted) {
+        throw new Error("Conversion cancelled by user");
+      }
       const time = f * frameInterval;
       const progressPct = Math.round(10 + (f / totalFrames) * 70);
       onProgress?.(progressPct, `Rendering frame ${f + 1} of ${totalFrames}...`);
@@ -324,6 +337,10 @@ export async function convertVideo(
           res();
         };
       });
+    }
+
+    if (signal?.aborted) {
+      throw new Error("Conversion cancelled by user");
     }
 
     onProgress?.(85, "Quantizing 256-color palette & LZW compression...");
@@ -373,8 +390,22 @@ export async function convertVideo(
     if (e.data && e.data.size > 0) chunks.push(e.data);
   };
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
+    let isAborted = false;
+
+    if (signal) {
+      signal.addEventListener("abort", () => {
+        isAborted = true;
+        video.pause();
+        if (recorder.state !== "inactive") {
+          recorder.stop();
+        }
+        reject(new Error("Conversion cancelled by user"));
+      });
+    }
+
     recorder.onstop = () => {
+      if (isAborted) return;
       const outputBlob = new Blob(chunks, { type: formatInfo.mimeType });
       onProgress?.(100, "Done");
       resolve({
@@ -395,6 +426,7 @@ export async function convertVideo(
     video.play();
 
     const drawLoop = () => {
+      if (isAborted || signal?.aborted) return;
       if (video.paused || video.ended) {
         if (recorder.state !== "inactive") {
           onProgress?.(95, "Finalizing video container...");
@@ -412,7 +444,7 @@ export async function convertVideo(
 
     video.onended = () => {
       setTimeout(() => {
-        if (recorder.state !== "inactive") {
+        if (!isAborted && recorder.state !== "inactive") {
           onProgress?.(95, "Finalizing video container...");
           recorder.stop();
         }

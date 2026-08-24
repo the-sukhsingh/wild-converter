@@ -19,6 +19,7 @@ interface DocumentActionBarProps {
   resultBlob: Blob | null;
   outputName: string;
   onConvert: () => void;
+  onCancel?: () => void;
 }
 
 export function DocumentActionBar({
@@ -33,6 +34,7 @@ export function DocumentActionBar({
   resultBlob,
   outputName,
   onConvert,
+  onCancel,
 }: DocumentActionBarProps) {
   const targetMeta = DOCUMENT_FORMAT_META[targetFormat];
 
@@ -46,9 +48,21 @@ export function DocumentActionBar({
               <Loader2 className="w-3 h-3 animate-spin text-[var(--foreground)] shrink-0" />
               <span>{progressText || "Converting document..."}</span>
             </span>
-            <span className="font-semibold text-[var(--foreground)] shrink-0">
-              {Math.round(progress ?? 0)}%
-            </span>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="font-semibold text-[var(--foreground)]">
+                {Math.round(progress ?? 0)}%
+              </span>
+              {onCancel && (
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  className="text-[11px] font-mono text-[var(--muted-foreground)] hover:text-destructive px-1.5 py-0.5 rounded hover:bg-destructive/10 transition-colors cursor-pointer"
+                  title="Cancel conversion"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
           </div>
           <div className="w-full h-1.5 bg-[var(--muted)] rounded-full overflow-hidden">
             <div
