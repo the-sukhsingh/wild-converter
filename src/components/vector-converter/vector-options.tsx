@@ -1,173 +1,170 @@
 "use client";
 
-import { Sliders, Sparkles, Paintbrush, Cpu } from "lucide-react";
 import { VECTOR_FORMATS } from "@/lib/vector-format-utils";
 import type { VectorConversionOptions, VectorMetadata } from "@/lib/vector-converter";
 
 interface VectorOptionsProps {
+  targetFormat: string;
   options: VectorConversionOptions;
-  metadata: VectorMetadata;
-  onChange: (options: VectorConversionOptions) => void;
-  disabled?: boolean;
+  metadata: VectorMetadata | null;
+  onOptionsChange: (options: VectorConversionOptions) => void;
 }
 
-export function VectorOptions({
+export function VectorOptionsPanel({
+  targetFormat,
   options,
   metadata,
-  onChange,
-  disabled = false,
+  onOptionsChange,
 }: VectorOptionsProps) {
-  const formatInfo = VECTOR_FORMATS[options.format] || VECTOR_FORMATS.svg;
-  const isCad = formatInfo.category === "cad";
+  const formatInfo = VECTOR_FORMATS[options.format] || VECTOR_FORMATS.eps;
   const isRaster = formatInfo.category === "rasterize";
 
   return (
-    <div className="space-y-4 pt-2">
-      <div className="flex items-center gap-2">
-        <Sliders className="w-3.5 h-3.5 text-[var(--muted-foreground)]" />
-        <label className="text-xs font-mono uppercase tracking-wider text-[var(--muted-foreground)]">
-          Geometry Scale, DPI & Rendering Engine
-        </label>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-        {/* Scale Multiplier */}
-        <div className="space-y-1.5">
-          <label className="text-xs text-[var(--muted-foreground)] font-mono flex items-center justify-between">
-            <span>Scale Multiplier</span>
-            <span className="text-[var(--foreground)] font-medium">
-              {options.scale}x ({metadata.width * options.scale}×{metadata.height * options.scale} px)
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 py-3 border-y border-[var(--border)]">
+      {/* Raster Scale Preset or DPI */}
+      {isRaster ? (
+        <div className="flex flex-col gap-1.5">
+          <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+            <span>Render Scale</span>
+            <span className="font-semibold text-[var(--foreground)]">
+              {options.scale}x ({options.dpi} DPI)
             </span>
-          </label>
-          <select
-            value={options.scale}
-            disabled={disabled}
-            onChange={(e) =>
-              onChange({
-                ...options,
-                scale: Number(e.target.value) as 1 | 2 | 3 | 4 | 8,
-              })
-            }
-            className="w-full bg-[var(--foreground)]/5 border border-[var(--border)] rounded px-2.5 py-1.5 text-xs text-[var(--foreground)] focus:outline-none focus:ring-1 focus:ring-[var(--foreground)] cursor-pointer"
-          >
-            <option value={1}>1.0x (Original Dimensions)</option>
-            <option value={2}>2.0x (Retina Display)</option>
-            <option value={3}>3.0x (High Density)</option>
-            <option value={4}>4.0x (4K Master)</option>
-            <option value={8}>8.0x (8K Ultra Precision)</option>
-          </select>
-        </div>
-
-        {/* DPI (for Prepress / Raster) */}
-        <div className="space-y-1.5">
-          <label className="text-xs text-[var(--muted-foreground)] font-mono flex items-center justify-between">
-            <span>DPI Density</span>
-            <span className="text-[var(--foreground)] font-medium">
-              {options.dpi} DPI
-            </span>
-          </label>
-          <select
-            value={options.dpi}
-            disabled={disabled}
-            onChange={(e) =>
-              onChange({
-                ...options,
-                dpi: Number(e.target.value) as 72 | 150 | 300 | 600,
-              })
-            }
-            className="w-full bg-[var(--foreground)]/5 border border-[var(--border)] rounded px-2.5 py-1.5 text-xs text-[var(--foreground)] focus:outline-none focus:ring-1 focus:ring-[var(--foreground)] cursor-pointer"
-          >
-            <option value={72}>72 DPI (Standard Web Screen)</option>
-            <option value={150}>150 DPI (Draft Proofing)</option>
-            <option value={300}>300 DPI (Commercial Print / Prepress)</option>
-            <option value={600}>600 DPI (Ultra Precision Archival)</option>
-          </select>
-        </div>
-
-        {/* Background Fill */}
-        <div className="space-y-1.5">
-          <label className="text-xs text-[var(--muted-foreground)] font-mono flex items-center justify-between">
-            <span>Background Fill</span>
-            <span className="text-[var(--foreground)] font-medium capitalize">
-              {options.background}
-            </span>
-          </label>
-          <div className="grid grid-cols-3 gap-1 bg-[var(--foreground)]/5 p-0.5 rounded border border-[var(--border)]">
-            {(["transparent", "white", "black"] as const).map((bg) => (
+          </div>
+          <div className="grid grid-cols-4 gap-1 bg-[var(--card)] p-0.5 rounded-md h-8 items-center text-center">
+            {([1, 2, 4, 8] as const).map((scl) => (
               <button
-                key={bg}
+                key={scl}
                 type="button"
-                disabled={disabled}
-                onClick={() => onChange({ ...options, background: bg })}
-                className={`text-xs py-1 rounded transition-colors capitalize cursor-pointer ${
-                  options.background === bg
+                onClick={() =>
+                  onOptionsChange({
+                    ...options,
+                    scale: scl,
+                    dpi: scl === 8 ? 600 : scl === 4 ? 300 : scl === 2 ? 150 : 72,
+                  })
+                }
+                className={`h-7 text-xs font-mono rounded transition-colors cursor-pointer ${
+                  options.scale === scl
                     ? "bg-[var(--foreground)] text-[var(--background)] font-medium"
                     : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
                 }`}
               >
-                {bg}
+                {scl}x
               </button>
             ))}
           </div>
         </div>
-
-        {/* CAD Version or Optimize SVG */}
-        {isCad ? (
-          <div className="space-y-1.5">
-            <label className="text-xs text-[var(--muted-foreground)] font-mono flex items-center justify-between">
-              <span>AutoCAD Standard</span>
-              <span className="text-[var(--foreground)] font-medium">
-                {options.dxfVersion}
-              </span>
-            </label>
-            <select
-              value={options.dxfVersion}
-              disabled={disabled}
-              onChange={(e) =>
-                onChange({
-                  ...options,
-                  dxfVersion: e.target.value as "R12" | "R2000",
-                })
-              }
-              className="w-full bg-[var(--foreground)]/5 border border-[var(--border)] rounded px-2.5 py-1.5 text-xs text-[var(--foreground)] focus:outline-none focus:ring-1 focus:ring-[var(--foreground)] cursor-pointer"
-            >
-              <option value="R2000">AutoCAD 2000 (AC1015) 64-bit</option>
-              <option value="R12">AutoCAD R12 (AC1009) Legacy CNC</option>
-            </select>
-          </div>
-        ) : (
-          <div className="space-y-1.5 flex flex-col justify-end">
-            <label
-              className={`flex items-center gap-2 text-xs font-mono p-2 rounded border border-[var(--border)] cursor-pointer select-none ${
-                options.optimizeSvg
-                  ? "bg-[var(--foreground)]/10 text-[var(--foreground)] font-medium"
-                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] bg-[var(--foreground)]/[0.02]"
-              }`}
-            >
-              <input
-                type="checkbox"
-                checked={options.optimizeSvg}
-                disabled={disabled}
-                onChange={(e) =>
-                  onChange({ ...options, optimizeSvg: e.target.checked })
-                }
-                className="rounded accent-[var(--foreground)]"
-              />
-              <Sparkles className="w-3.5 h-3.5 shrink-0 text-amber-500" />
-              <span>Clean & Minify SVG XML</span>
-            </label>
-          </div>
-        )}
-
-        {/* Engine Status */}
-        <div className="space-y-1.5 flex flex-col justify-end sm:col-span-2 md:col-span-2">
-          <div className="flex items-center gap-2 text-xs font-mono p-2 rounded border border-[var(--border)] text-[var(--muted-foreground)] bg-[var(--foreground)]/[0.02]">
-            <Cpu className="w-3.5 h-3.5 shrink-0 text-blue-500" />
-            <span className="truncate">
-              Pure Client-Side SVG DOM AST & PostScript Vector Compiler
+      ) : (
+        <div className="flex flex-col gap-1.5">
+          <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+            <span>Coordinate Precision</span>
+            <span className="font-semibold text-[var(--foreground)]">
+              High (Floating Point)
             </span>
           </div>
+          <select
+            value={options.dxfVersion}
+            onChange={(e) =>
+              onOptionsChange({
+                ...options,
+                dxfVersion: e.target.value as "R12" | "R2000",
+              })
+            }
+            className="w-full h-8 px-2.5 text-xs font-mono bg-[var(--card)] text-[var(--foreground)] rounded-md outline-none focus:ring-1 focus:ring-[var(--ring)] cursor-pointer"
+          >
+            <option value="R2000">AutoCAD 2000 / Modern DXF</option>
+            <option value="R12">AutoCAD Release 12 (CNC / Legacy)</option>
+          </select>
         </div>
+      )}
+
+      {/* Background Fill (for raster) or Preserve Aspect */}
+      {isRaster ? (
+        <div className="flex flex-col gap-1.5">
+          <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+            <span>Background</span>
+            <span className="font-semibold text-[var(--foreground)]">
+              {options.background === "transparent" ? "Alpha" : "White"}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-1 bg-[var(--card)] p-0.5 rounded-md h-8 items-center text-center">
+            <button
+              type="button"
+              onClick={() =>
+                onOptionsChange({ ...options, background: "transparent" })
+              }
+              className={`h-7 text-xs font-mono rounded transition-colors cursor-pointer ${
+                options.background === "transparent"
+                  ? "bg-[var(--foreground)] text-[var(--background)] font-medium"
+                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+              }`}
+            >
+              Transparent
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                onOptionsChange({ ...options, background: "white" })
+              }
+              className={`h-7 text-xs font-mono rounded transition-colors cursor-pointer ${
+                options.background === "white"
+                  ? "bg-[var(--foreground)] text-[var(--background)] font-medium"
+                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+              }`}
+            >
+              White #FFF
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-1.5">
+          <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+            <span>PostScript Standard</span>
+            <span className="font-semibold text-[var(--foreground)]">
+              Level 3 / AI 8.0
+            </span>
+          </div>
+          <div className="flex items-center h-8 px-2.5 text-xs font-mono bg-[var(--card)] text-[var(--muted-foreground)] rounded-md">
+            Vector PostScript Compiler
+          </div>
+        </div>
+      )}
+
+      {/* Target Render Size */}
+      <div className="flex flex-col gap-1.5">
+        <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+          <span>Target Canvas</span>
+          <span className="text-[var(--foreground)]">
+            {metadata
+              ? `${Math.round(metadata.width * options.scale)} × ${Math.round(
+                  metadata.height * options.scale
+                )} px`
+              : "—"}
+          </span>
+        </div>
+        <div className="flex items-center h-8 px-2.5 text-xs font-mono bg-[var(--card)] text-[var(--muted-foreground)] rounded-md">
+          {metadata ? `${metadata.pathCount} vector paths compiled` : "Vector AST"}
+        </div>
+      </div>
+
+      {/* Optimize Vectors Toggle */}
+      <div className="flex flex-col justify-end">
+        <label
+          className={`flex items-center gap-2 text-xs font-mono h-8 px-2.5 rounded-md cursor-pointer select-none transition-colors ${
+            options.optimizeSvg
+              ? "bg-[var(--primary)] text-[var(--primary-foreground)] font-medium"
+              : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+          }`}
+        >
+          <input
+            type="checkbox"
+            checked={options.optimizeSvg}
+            onChange={(e) =>
+              onOptionsChange({ ...options, optimizeSvg: e.target.checked })
+            }
+            className="rounded accent-[var(--foreground)] sr-only"
+          />
+          <span>Optimize Vector Curves & Clean AST</span>
+        </label>
       </div>
     </div>
   );

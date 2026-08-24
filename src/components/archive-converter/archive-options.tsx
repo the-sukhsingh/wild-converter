@@ -1,86 +1,98 @@
 "use client";
 
-import { Sliders, Cpu, Archive } from "lucide-react";
 import { ARCHIVE_FORMATS } from "@/lib/archive-format-utils";
 import type { ArchiveConversionOptions, ArchiveMetadata } from "@/lib/archive-converter";
 
 interface ArchiveOptionsProps {
+  targetFormat: string;
   options: ArchiveConversionOptions;
-  metadata: ArchiveMetadata;
-  onChange: (options: ArchiveConversionOptions) => void;
-  disabled?: boolean;
+  metadata: ArchiveMetadata | null;
+  onOptionsChange: (options: ArchiveConversionOptions) => void;
 }
 
-export function ArchiveOptions({
+export function ArchiveOptionsPanel({
+  targetFormat,
   options,
   metadata,
-  onChange,
-  disabled = false,
+  onOptionsChange,
 }: ArchiveOptionsProps) {
   const formatInfo = ARCHIVE_FORMATS[options.format] || ARCHIVE_FORMATS.zip;
 
   return (
-    <div className="space-y-4 pt-2">
-      <div className="flex items-center gap-2">
-        <Sliders className="w-3.5 h-3.5 text-[var(--muted-foreground)]" />
-        <label className="text-xs font-mono uppercase tracking-wider text-[var(--muted-foreground)]">
-          Compression Level & Packing Options
-        </label>
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 py-3 border-y border-[var(--border)]">
+      {/* Compression Level */}
+      <div className="flex flex-col gap-1.5">
+        <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+          <span>Deflate Compression</span>
+          <span className="font-semibold text-[var(--foreground)]">
+            Level {options.compressionLevel}
+          </span>
+        </div>
+        <select
+          value={options.compressionLevel}
+          onChange={(e) =>
+            onOptionsChange({
+              ...options,
+              compressionLevel: Number(e.target.value) as 0 | 1 | 6 | 9,
+            })
+          }
+          className="w-full h-8 px-2.5 text-xs font-mono bg-[var(--card)] text-[var(--foreground)] rounded-md outline-none focus:ring-1 focus:ring-[var(--ring)] cursor-pointer"
+        >
+          <option value={9}>Level 9 (Maximum Compression)</option>
+          <option value={6}>Level 6 (Balanced Default)</option>
+          <option value={1}>Level 1 (Fast Speed)</option>
+          <option value={0}>Level 0 (Store Only / No Deflate)</option>
+        </select>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-        {/* Compression Level */}
-        {formatInfo.supportsCompressionLevel ? (
-          <div className="space-y-1.5">
-            <label className="text-xs text-[var(--muted-foreground)] font-mono flex items-center justify-between">
-              <span>Compression Level</span>
-              <span className="text-[var(--foreground)] font-medium">
-                {options.compressionLevel === 0
-                  ? "Level 0 (Store Only)"
-                  : options.compressionLevel === 1
-                  ? "Level 1 (Fast)"
-                  : options.compressionLevel === 6
-                  ? "Level 6 (Standard)"
-                  : "Level 9 (Maximum Deflate)"}
-              </span>
-            </label>
-            <select
-              value={options.compressionLevel}
-              disabled={disabled}
-              onChange={(e) =>
-                onChange({
-                  ...options,
-                  compressionLevel: Number(e.target.value) as 0 | 1 | 6 | 9,
-                })
-              }
-              className="w-full bg-[var(--foreground)]/5 border border-[var(--border)] rounded px-2.5 py-1.5 text-xs text-[var(--foreground)] focus:outline-none focus:ring-1 focus:ring-[var(--foreground)] cursor-pointer"
-            >
-              <option value={9}>Level 9 (Maximum Compression)</option>
-              <option value={6}>Level 6 (Balanced Standard)</option>
-              <option value={1}>Level 1 (Fastest Speed)</option>
-              <option value={0}>Level 0 (Store / Uncompressed)</option>
-            </select>
-          </div>
-        ) : (
-          <div className="space-y-1.5">
-            <label className="text-xs text-[var(--muted-foreground)] font-mono">
-              Compression
-            </label>
-            <div className="p-2 rounded bg-[var(--foreground)]/[0.02] border border-[var(--border)] text-xs font-mono text-[var(--muted-foreground)]">
-              Uncompressed POSIX Tape Archive Container
-            </div>
-          </div>
-        )}
-
-        {/* Engine status */}
-        <div className="space-y-1.5 flex flex-col justify-end sm:col-span-2">
-          <div className="flex items-center gap-2 text-xs font-mono p-2 rounded border border-[var(--border)] text-[var(--muted-foreground)] bg-[var(--foreground)]/[0.02]">
-            <Cpu className="w-3.5 h-3.5 shrink-0 text-amber-500" />
-            <span className="truncate">
-              Pure Client-Side WASM / Deflate Streaming Compression Engine
-            </span>
-          </div>
+      {/* Container Engine */}
+      <div className="flex flex-col gap-1.5">
+        <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+          <span>Container Spec</span>
+          <span className="font-semibold text-[var(--foreground)]">
+            {formatInfo.category.toUpperCase()}
+          </span>
         </div>
+        <div className="flex items-center h-8 px-2.5 text-xs font-mono bg-[var(--card)] text-[var(--muted-foreground)] rounded-md">
+          POSIX ustar / PKZIP 2.0
+        </div>
+      </div>
+
+      {/* Total Archived Files */}
+      <div className="flex flex-col gap-1.5">
+        <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+          <span>Files Count</span>
+          <span className="text-[var(--foreground)] font-semibold">
+            {metadata ? `${metadata.totalFiles} files` : "—"}
+          </span>
+        </div>
+        <div className="flex items-center h-8 px-2.5 text-xs font-mono bg-[var(--card)] text-[var(--muted-foreground)] rounded-md">
+          {metadata ? `${metadata.entries.length} items unpacked` : "Archive Tree"}
+        </div>
+      </div>
+
+      {/* Strip Root Folder Toggle */}
+      <div className="flex flex-col justify-end">
+        <label
+          className={`flex items-center gap-2 text-xs font-mono h-8 px-2.5 rounded-md cursor-pointer select-none transition-colors ${
+            options.stripRootFolder
+              ? "bg-[var(--primary)] text-[var(--primary-foreground)] font-medium"
+              : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+          }`}
+        >
+          <input
+            type="checkbox"
+            checked={options.stripRootFolder}
+            onChange={(e) =>
+              onOptionsChange({
+                ...options,
+                stripRootFolder: e.target.checked,
+              })
+            }
+            className="rounded accent-[var(--foreground)] sr-only"
+          />
+          <span>Flatten / Strip Root Enclosing Folder</span>
+        </label>
       </div>
     </div>
   );

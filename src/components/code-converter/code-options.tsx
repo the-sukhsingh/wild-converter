@@ -1,154 +1,134 @@
 "use client";
 
-import { Sliders, Minimize2, EyeOff, Hash } from "lucide-react";
 import { CODE_FORMATS } from "@/lib/code-format-utils";
 import type { CodeConversionOptions, CodeMetadata } from "@/lib/code-converter";
 
 interface CodeOptionsProps {
+  targetFormat: string;
   options: CodeConversionOptions;
-  metadata: CodeMetadata;
-  onChange: (options: CodeConversionOptions) => void;
-  disabled?: boolean;
+  metadata: CodeMetadata | null;
+  onOptionsChange: (options: CodeConversionOptions) => void;
 }
 
-export function CodeOptions({
+export function CodeOptionsPanel({
+  targetFormat,
   options,
   metadata,
-  onChange,
-  disabled = false,
+  onOptionsChange,
 }: CodeOptionsProps) {
   const formatInfo = CODE_FORMATS[options.format] || CODE_FORMATS.ts;
 
   return (
-    <div className="space-y-4 pt-2">
-      <div className="flex items-center gap-2">
-        <Sliders className="w-3.5 h-3.5 text-[var(--muted-foreground)]" />
-        <label className="text-xs font-mono uppercase tracking-wider text-[var(--muted-foreground)]">
-          Formatting, Indentation & Transpiler Options
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 py-3 border-y border-[var(--border)]">
+      {/* Indentation */}
+      <div className="flex flex-col gap-1.5">
+        <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+          <span>Indentation</span>
+          <span className="font-semibold text-[var(--foreground)]">
+            {options.indentation === "tab" ? "Tab (\\t)" : `${options.indentation} Spaces`}
+          </span>
+        </div>
+        <div className="grid grid-cols-3 gap-1 bg-[var(--card)] p-0.5 rounded-md h-8 items-center text-center">
+          <button
+            type="button"
+            disabled={options.minify}
+            onClick={() => onOptionsChange({ ...options, indentation: 2 })}
+            className={`h-7 text-xs font-mono rounded transition-colors cursor-pointer disabled:opacity-30 ${
+              options.indentation === 2 && !options.minify
+                ? "bg-[var(--foreground)] text-[var(--background)] font-medium"
+                : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+            }`}
+          >
+            2 sp
+          </button>
+          <button
+            type="button"
+            disabled={options.minify}
+            onClick={() => onOptionsChange({ ...options, indentation: 4 })}
+            className={`h-7 text-xs font-mono rounded transition-colors cursor-pointer disabled:opacity-30 ${
+              options.indentation === 4 && !options.minify
+                ? "bg-[var(--foreground)] text-[var(--background)] font-medium"
+                : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+            }`}
+          >
+            4 sp
+          </button>
+          <button
+            type="button"
+            disabled={options.minify}
+            onClick={() => onOptionsChange({ ...options, indentation: "tab" })}
+            className={`h-7 text-xs font-mono rounded transition-colors cursor-pointer disabled:opacity-30 ${
+              options.indentation === "tab" && !options.minify
+                ? "bg-[var(--foreground)] text-[var(--background)] font-medium"
+                : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+            }`}
+          >
+            Tab
+          </button>
+        </div>
+      </div>
+
+      {/* Minify Code Toggle */}
+      <div className="flex flex-col justify-end">
+        <label
+          className={`flex items-center gap-2 text-xs font-mono h-8 px-2.5 rounded-md cursor-pointer select-none transition-colors ${
+            options.minify
+              ? "bg-[var(--primary)] text-[var(--primary-foreground)] font-medium"
+              : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+          }`}
+        >
+          <input
+            type="checkbox"
+            checked={options.minify}
+            onChange={(e) =>
+              onOptionsChange({ ...options, minify: e.target.checked })
+            }
+            className="rounded accent-[var(--foreground)] sr-only"
+          />
+          <span>Minify & Compress Source</span>
         </label>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-        {/* Indentation */}
-        <div className="space-y-1.5">
-          <label className="text-xs text-[var(--muted-foreground)] font-mono flex items-center justify-between">
-            <span>Indentation</span>
-            <span className="text-[var(--foreground)] font-medium">
-              {options.indentation === "tab"
-                ? "Tab (\\t)"
-                : `${options.indentation} Spaces`}
-            </span>
-          </label>
-          <div className="grid grid-cols-3 gap-1 bg-[var(--foreground)]/5 p-0.5 rounded border border-[var(--border)]">
-            <button
-              type="button"
-              disabled={disabled || options.minify}
-              onClick={() => onChange({ ...options, indentation: 2 })}
-              className={`text-xs py-1 rounded transition-colors cursor-pointer ${
-                options.indentation === 2
-                  ? "bg-[var(--foreground)] text-[var(--background)] font-medium"
-                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-              }`}
-            >
-              2 Spaces
-            </button>
-            <button
-              type="button"
-              disabled={disabled || options.minify}
-              onClick={() => onChange({ ...options, indentation: 4 })}
-              className={`text-xs py-1 rounded transition-colors cursor-pointer ${
-                options.indentation === 4
-                  ? "bg-[var(--foreground)] text-[var(--background)] font-medium"
-                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-              }`}
-            >
-              4 Spaces
-            </button>
-            <button
-              type="button"
-              disabled={disabled || options.minify}
-              onClick={() => onChange({ ...options, indentation: "tab" })}
-              className={`text-xs py-1 rounded transition-colors cursor-pointer ${
-                options.indentation === "tab"
-                  ? "bg-[var(--foreground)] text-[var(--background)] font-medium"
-                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-              }`}
-            >
-              Tab
-            </button>
-          </div>
-        </div>
+      {/* Strip Comments Toggle */}
+      <div className="flex flex-col justify-end">
+        <label
+          className={`flex items-center gap-2 text-xs font-mono h-8 px-2.5 rounded-md cursor-pointer select-none transition-colors ${
+            options.stripComments
+              ? "bg-[var(--primary)] text-[var(--primary-foreground)] font-medium"
+              : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+          }`}
+        >
+          <input
+            type="checkbox"
+            checked={options.stripComments}
+            onChange={(e) =>
+              onOptionsChange({ ...options, stripComments: e.target.checked })
+            }
+            className="rounded accent-[var(--foreground)] sr-only"
+          />
+          <span>Strip Code Comments</span>
+        </label>
+      </div>
 
-        {/* Minify Code */}
-        {formatInfo.supportsMinify && (
-          <div className="space-y-1.5 flex flex-col justify-end">
-            <label
-              className={`flex items-center gap-2 text-xs font-mono p-2 rounded border border-[var(--border)] cursor-pointer select-none ${
-                options.minify
-                  ? "bg-[var(--foreground)]/10 text-[var(--foreground)] font-medium"
-                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] bg-[var(--foreground)]/[0.02]"
-              }`}
-            >
-              <input
-                type="checkbox"
-                checked={options.minify}
-                disabled={disabled}
-                onChange={(e) =>
-                  onChange({ ...options, minify: e.target.checked })
-                }
-                className="rounded accent-[var(--foreground)]"
-              />
-              <Minimize2 className="w-3.5 h-3.5 shrink-0" />
-              <span>Minify & Compress Code</span>
-            </label>
-          </div>
-        )}
-
-        {/* Strip Comments */}
-        <div className="space-y-1.5 flex flex-col justify-end">
-          <label
-            className={`flex items-center gap-2 text-xs font-mono p-2 rounded border border-[var(--border)] cursor-pointer select-none ${
-              options.stripComments
-                ? "bg-[var(--foreground)]/10 text-[var(--foreground)] font-medium"
-                : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] bg-[var(--foreground)]/[0.02]"
-            }`}
-          >
-            <input
-              type="checkbox"
-              checked={options.stripComments}
-              disabled={disabled}
-              onChange={(e) =>
-                onChange({ ...options, stripComments: e.target.checked })
-              }
-              className="rounded accent-[var(--foreground)]"
-            />
-            <EyeOff className="w-3.5 h-3.5 shrink-0" />
-            <span>Strip Comments</span>
-          </label>
-        </div>
-
-        {/* Add Line Numbers */}
-        <div className="space-y-1.5 flex flex-col justify-end">
-          <label
-            className={`flex items-center gap-2 text-xs font-mono p-2 rounded border border-[var(--border)] cursor-pointer select-none ${
-              options.addLineNumbers
-                ? "bg-[var(--foreground)]/10 text-[var(--foreground)] font-medium"
-                : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] bg-[var(--foreground)]/[0.02]"
-            }`}
-          >
-            <input
-              type="checkbox"
-              checked={options.addLineNumbers}
-              disabled={disabled}
-              onChange={(e) =>
-                onChange({ ...options, addLineNumbers: e.target.checked })
-              }
-              className="rounded accent-[var(--foreground)]"
-            />
-            <Hash className="w-3.5 h-3.5 shrink-0" />
-            <span>Prepend Line Numbers</span>
-          </label>
-        </div>
+      {/* Add Line Numbers Toggle */}
+      <div className="flex flex-col justify-end">
+        <label
+          className={`flex items-center gap-2 text-xs font-mono h-8 px-2.5 rounded-md cursor-pointer select-none transition-colors ${
+            options.addLineNumbers
+              ? "bg-[var(--primary)] text-[var(--primary-foreground)] font-medium"
+              : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+          }`}
+        >
+          <input
+            type="checkbox"
+            checked={options.addLineNumbers}
+            onChange={(e) =>
+              onOptionsChange({ ...options, addLineNumbers: e.target.checked })
+            }
+            className="rounded accent-[var(--foreground)] sr-only"
+          />
+          <span>Prepend Line Numbers</span>
+        </label>
       </div>
     </div>
   );

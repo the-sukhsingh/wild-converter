@@ -1,115 +1,109 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo } from "react";
+import { Search } from "lucide-react";
 import {
   ARCHIVE_FORMATS,
   type ArchiveFormat,
-  type ArchiveFormatInfo,
 } from "@/lib/archive-format-utils";
 
 interface ArchiveFormatSelectorProps {
   selectedFormat: ArchiveFormat;
-  onSelectFormat: (format: ArchiveFormat) => void;
-  disabled?: boolean;
+  inputFormat: ArchiveFormat | "unknown" | null;
+  searchQuery: string;
+  onSearchChange: (q: string) => void;
+  onSelectFormat: (fmt: ArchiveFormat) => void;
 }
-
-type TabCategory = "all" | "universal" | "unix" | "package" | "disk" | "lossless-preset";
 
 export function ArchiveFormatSelector({
   selectedFormat,
+  inputFormat,
+  searchQuery,
+  onSearchChange,
   onSelectFormat,
-  disabled = false,
 }: ArchiveFormatSelectorProps) {
-  const [activeTab, setActiveTab] = useState<TabCategory>("universal");
-
   const allFormats = Object.values(ARCHIVE_FORMATS);
+  const targetMeta = ARCHIVE_FORMATS[selectedFormat];
 
-  const filteredFormats = allFormats.filter((fmt) => {
-    if (activeTab === "all") return true;
-    if (activeTab === "lossless-preset") return fmt.id.endsWith("-ls");
-    if (fmt.id.endsWith("-ls")) return false;
-    return fmt.category === activeTab;
-  });
+  const filteredFormats = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return allFormats;
+    return allFormats.filter(
+      (f) =>
+        f.id.toLowerCase().includes(q) ||
+        f.label.toLowerCase().includes(q) ||
+        f.extension.toLowerCase().includes(q) ||
+        f.description.toLowerCase().includes(q)
+    );
+  }, [searchQuery, allFormats]);
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <label className="text-xs font-mono uppercase tracking-wider text-[var(--muted-foreground)]">
-          Target Archive Container
-        </label>
-        <span className="text-xs font-mono text-[var(--muted-foreground)]">
-          {ARCHIVE_FORMATS[selectedFormat]?.description}
+    <div className="flex flex-col gap-2.5">
+      <div className="flex items-center justify-between text-xs font-mono text-[var(--muted-foreground)]">
+        <span className="uppercase tracking-wider font-semibold">
+          Convert to {targetMeta?.label}
+        </span>
+        <span className="text-[var(--muted-foreground)]/80">
+          {targetMeta?.description}
         </span>
       </div>
 
-      {/* Category Tabs */}
-      <div className="flex items-center gap-1 overflow-x-auto pb-1 border-b border-[var(--border)] text-xs font-mono scrollbar-none">
-        {(
-          [
-            { id: "universal", label: "Universal (ZIP, 7z)" },
-            { id: "unix", label: "Linux / Unix (TAR, TGZ, GZ)" },
-            { id: "package", label: "Package (JAR, APK, DEB)" },
-            { id: "disk", label: "Disk Image (ISO, DMG)" },
-            { id: "lossless-preset", label: "Lossless (-ls)" },
-            { id: "all", label: "All Formats" },
-          ] as const
-        ).map((tab) => (
+      <div className="relative flex items-center">
+        <Search className="w-3.5 h-3.5 text-[var(--muted-foreground)] absolute left-3 pointer-events-none" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+          placeholder="Filter format (e.g. zip, tgz, tar, gz, 7z, bz2, ls)..."
+          className="w-full h-9 pl-9 pr-3 text-xs md:text-sm bg-[var(--card)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] rounded-lg outline-none focus:ring-1 focus:ring-[var(--ring)] transition-all font-sans"
+          aria-label="Filter target archive formats"
+        />
+        {searchQuery && (
           <button
-            key={tab.id}
             type="button"
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-2.5 py-1 rounded transition-colors whitespace-nowrap cursor-pointer ${
-              activeTab === tab.id
-                ? "bg-[var(--foreground)] text-[var(--background)] font-medium"
-                : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--foreground)]/5"
-            }`}
+            onClick={() => onSearchChange("")}
+            className="absolute right-2.5 text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] p-1"
           >
-            {tab.label}
+            ×
           </button>
-        ))}
+        )}
       </div>
 
-      {/* Format Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-1.5 max-h-48 overflow-y-auto pr-1">
-        {filteredFormats.map((fmt: ArchiveFormatInfo) => {
+      <div
+        className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto no-scrollbar py-0.5"
+        role="group"
+        aria-label="Available output formats"
+      >
+        {filteredFormats.map((fmt) => {
           const isSelected = selectedFormat === fmt.id;
+          const isSameAsInput = inputFormat === fmt.id;
+          const isLossless = fmt.id.endsWith("-ls") || fmt.isLossless;
+
           return (
             <button
               key={fmt.id}
               type="button"
-              disabled={disabled}
+              disabled={isSameAsInput}
               onClick={() => onSelectFormat(fmt.id)}
-              className={`flex flex-col items-start p-2 rounded text-left transition-all cursor-pointer ${
+              className={`h-7 px-2.5 rounded-md text-xs font-mono font-medium inline-flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
                 isSelected
-                  ? "bg-[var(--foreground)] text-[var(--background)] ring-1 ring-[var(--foreground)]"
-                  : "bg-[var(--foreground)]/[0.02] hover:bg-[var(--foreground)]/5 text-[var(--foreground)] border border-[var(--border)]/60"
-              } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                  ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs"
+                  : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+              }`}
+              title={fmt.description}
             >
-              <div className="flex items-center justify-between w-full">
-                <span className="font-mono font-bold text-xs truncate pr-1">
-                  {fmt.label.split(" ")[0]}
+              <span>{fmt.label}</span>
+              {isLossless && (
+                <span
+                  className={`text-[9px] px-1 rounded uppercase tracking-wider font-semibold ${
+                    isSelected
+                      ? "bg-[var(--background)]/20 text-[var(--primary-foreground)]"
+                      : "bg-[var(--background)] text-[var(--muted-foreground)]"
+                  }`}
+                >
+                  {fmt.category === "universal" ? "ZIP" : "LS"}
                 </span>
-                {fmt.isLossless && (
-                  <span
-                    className={`text-[9px] px-1 rounded uppercase tracking-wider ${
-                      isSelected
-                        ? "bg-[var(--background)]/20 text-[var(--background)]"
-                        : "bg-[var(--foreground)]/10 text-[var(--muted-foreground)]"
-                    }`}
-                  >
-                    Archive
-                  </span>
-                )}
-              </div>
-              <span
-                className={`text-[10px] truncate w-full mt-0.5 ${
-                  isSelected
-                    ? "text-[var(--background)]/80"
-                    : "text-[var(--muted-foreground)]"
-                }`}
-              >
-                .{fmt.extension}
-              </span>
+              )}
             </button>
           );
         })}

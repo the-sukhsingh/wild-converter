@@ -1,18 +1,22 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
+import {
+  type VectorFormat,
+  VECTOR_FORMATS,
+  detectVectorFormat,
+} from "@/lib/vector-format-utils";
 import {
   parseVectorFile,
   convertVector,
   type VectorConversionOptions,
-  type VectorConversionResult,
   type VectorMetadata,
+  type VectorConversionResult,
 } from "@/lib/vector-converter";
-import { type VectorFormat } from "@/lib/vector-format-utils";
 import { VectorDropzone } from "./vector-dropzone";
 import { VectorHeader } from "./vector-header";
 import { VectorFormatSelector } from "./vector-format-selector";
-import { VectorOptions } from "./vector-options";
+import { VectorOptionsPanel } from "./vector-options";
 import { VectorActionBar } from "./vector-action-bar";
 
 interface VectorConverterProps {
@@ -23,154 +27,189 @@ interface VectorConverterProps {
 export function VectorConverter({
   initialFile,
   onClearInitialFile,
-}: VectorConverterProps) {
-  const [file, setFile] = useState<File | null>(null);
+}: VectorConverterProps = {}) {
+  const [file, setFile] = useState<File | null>(initialFile || null);
   const [metadata, setMetadata] = useState<VectorMetadata | null>(null);
-  const [isParsing, setIsParsing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const [selectedFormat, setSelectedFormat] = useState<VectorFormat>("eps");
+  const [targetFormat, setTargetFormat] = useState<VectorFormat>("eps");
+  const [searchQuery, setSearchQuery] = useState("");
   const [options, setOptions] = useState<VectorConversionOptions>({
     format: "eps",
-    scale: 1,
+    scale: 2,
     dpi: 300,
     background: "transparent",
     strokePrecision: 3,
-    optimizeSvg: false,
     dxfVersion: "R2000",
+    optimizeSvg: true,
   });
 
+  const [exactProbedSize, setExactProbedSize] = useState<number | null>(null);
+  const [isProbing, setIsProbing] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
-  const [progressText, setProgressText] = useState("");
-  const [result, setResult] = useState<VectorConversionResult | null>(null);
+  const [conversionResult, setConversionResult] = useState<VectorConversionResult | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const handleFileSelect = useCallback(async (selectedFile: File) => {
-    setIsParsing(true);
-    setError(null);
-    setResult(null);
+  // Sync initialFile
+  useEffect(() => {
+    if (initialFile && initialFile !== file) {
+      handleFileSelect(initialFile);
+    }
+  }, [initialFile]);
 
+  const handleFileSelect = useCallback(async (f: File) => {
+    setFile(f);
+    setErrorMsg(null);
+    setConversionResult(null);
     try {
-      const meta = await parseVectorFile(selectedFile);
-      setFile(selectedFile);
+      const meta = await parseVectorFile(f);
       setMetadata(meta);
 
-      const defaultFmt: VectorFormat = selectedFile.name.endsWith(".svg") ? "eps" : "svg";
-      setSelectedFormat(defaultFmt);
+      const defaultFmt: VectorFormat = meta.format === "svg" ? "eps" : "svg";
+      setTargetFormat(defaultFmt);
       setOptions((prev) => ({
         ...prev,
         format: defaultFmt,
       }));
-    } catch (err: unknown) {
+    } catch (err) {
       console.error("Vector parse error:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to parse vector graphic. File may contain malformed XML or binary data."
-      );
-    } finally {
-      setIsParsing(false);
+      setErrorMsg(err instanceof Error ? err.message : "Failed to parse vector graphic");
     }
   }, []);
 
+  // Live estimated size calculation
   useEffect(() => {
-    if (initialFile) {
-      handleFileSelect(initialFile);
+    if (!metadata || !targetFormat) {
+      setExactProbedSize(null);
+      return;
     }
-  }, [initialFile, handleFileSelect]);
+    const formatInfo = VECTOR_FORMATS[targetFormat];
+    let estBytes = 0;
 
-  const handleFormatChange = (fmt: VectorFormat) => {
-    setSelectedFormat(fmt);
-    setOptions((prev) => ({
-      ...prev,
-      format: fmt,
-      dpi: fmt === "eps-ls" ? 300 : prev.dpi,
-    }));
-  };
+    if (formatInfo.category === "rasterize") {
+      const w = metadata.width * options.scale;
+      const h = metadata.height * options.scale;
+      estBytes = Math.round(w * h * (targetFormat === "png" ? 0.35 : 0.15));
+    } else if (targetFormat === "dxf") {
+      estBytes = Math.round(metadata.pathCount * 180 + 2048);
+    } else if (targetFormat === "eps" || targetFormat === "ai" || targetFormat === "ps") {
+      estBytes = Math.round(metadata.svgContent.length * 1.2 + 1024);
+    } else if (targetFormat === "pdf") {
+      estBytes = Math.round(metadata.svgContent.length * 1.5 + 4096);
+    } else {
+      estBytes = Math.round(metadata.svgContent.length * 0.9);
+    }
 
-  const handleClear = () => {
+    setExactProbedSize(estBytes);
+  }, [metadata, targetFormat, options]);
+
+  // Reset conversion state on parameter changes
+  useEffect(() => {
+    setConversionResult(null);
+    setErrorMsg(null);
+  }, [file, targetFormat, options]);
+
+  const handleRemove = useCallback(() => {
     setFile(null);
     setMetadata(null);
-    setResult(null);
-    setError(null);
-    if (onClearInitialFile) {
-      onClearInitialFile();
-    }
-  };
+    setConversionResult(null);
+    setErrorMsg(null);
+    if (onClearInitialFile) onClearInitialFile();
+  }, [onClearInitialFile]);
 
-  const handleConvert = async () => {
-    if (!metadata || !file) return;
-
+  const handleConvert = useCallback(async () => {
+    if (!file || !metadata) return;
     setIsConverting(true);
-    setProgressText("Compiling vector paths & structures...");
-    setError(null);
+    setErrorMsg(null);
 
     try {
-      const res = await convertVector(metadata, file.name, options);
-      setResult(res);
-    } catch (err: unknown) {
-      console.error("Vector conversion failed:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to convert vector file. Please adjust options and retry."
-      );
-    } finally {
+      const res = await convertVector(metadata, file.name, {
+        ...options,
+        format: targetFormat,
+      });
+      setConversionResult(res);
       setIsConverting(false);
-      setProgressText("");
+    } catch (err) {
+      console.error("Conversion error:", err);
+      setErrorMsg(err instanceof Error ? err.message : "Vector conversion failed");
+      setIsConverting(false);
     }
-  };
+  }, [file, metadata, targetFormat, options]);
+
+  const hasFile = !!file;
+  const targetMeta = VECTOR_FORMATS[targetFormat];
+  const outputName = file
+    ? `${file.name.replace(/\.[^/.]+$/, "")}.${targetMeta?.extension || "eps"}`
+    : "";
+
+  const sizeDiffPercent = useMemo(() => {
+    if (!exactProbedSize || !file?.size) return null;
+    return Math.round(((exactProbedSize - file.size) / file.size) * 100);
+  }, [exactProbedSize, file?.size]);
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-4 md:px-8 py-4 flex-1 flex flex-col justify-between overflow-y-auto">
-      <div className="space-y-4">
-        {!file || !metadata ? (
-          <div className="space-y-4 py-8">
-            <VectorDropzone
-              onFileSelect={handleFileSelect}
-              isProcessing={isParsing}
-            />
-            {error && (
-              <div className="p-3 rounded bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-mono">
-                {error}
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-5">
-            <VectorHeader metadata={metadata} onClear={handleClear} />
+    <div className="relative flex-1 w-full max-w-5xl mx-auto px-4 md:px-8 overflow-hidden">
+      {/* State 1: Dropzone */}
+      <div
+        className={`absolute inset-0 px-4 md:px-8 py-6 flex flex-col justify-center transition-opacity duration-200 ${
+          !hasFile ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+        aria-hidden={hasFile}
+      >
+        <VectorDropzone onFileSelect={handleFileSelect} />
+      </div>
 
+      {/* State 2: Active Workspace */}
+      <div
+        className={`absolute inset-0 px-4 md:px-8 py-6 flex flex-col justify-between transition-opacity duration-200 ${
+          hasFile ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+        aria-hidden={!hasFile}
+      >
+        {file && metadata && (
+          <div className="h-full flex flex-col justify-between gap-4">
+            {/* Header */}
+            <VectorHeader metadata={metadata} onRemove={handleRemove} />
+
+            {/* Format Selector */}
             <VectorFormatSelector
-              selectedFormat={selectedFormat}
-              onSelectFormat={handleFormatChange}
-              disabled={isConverting}
+              selectedFormat={targetFormat}
+              inputFormat={metadata.format}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              onSelectFormat={(fmt) => {
+                setTargetFormat(fmt);
+                setSearchQuery("");
+              }}
             />
 
-            <VectorOptions
+            {/* Options Panel */}
+            <VectorOptionsPanel
+              targetFormat={targetFormat}
               options={options}
               metadata={metadata}
-              onChange={setOptions}
-              disabled={isConverting}
+              onOptionsChange={setOptions}
             />
 
-            {error && (
-              <div className="p-3 rounded bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-mono">
-                {error}
+            {/* Action Bar */}
+            <VectorActionBar
+              targetFormat={targetFormat}
+              exactProbedSize={exactProbedSize}
+              sizeDiffPercent={sizeDiffPercent}
+              isProbing={isProbing}
+              isConverting={isConverting}
+              resultUrl={conversionResult?.url || null}
+              resultBlob={conversionResult?.blob || null}
+              outputName={outputName}
+              onConvert={handleConvert}
+            />
+
+            {errorMsg && (
+              <div className="text-xs font-mono text-destructive">
+                {errorMsg}
               </div>
             )}
           </div>
         )}
       </div>
-
-      {file && metadata && (
-        <VectorActionBar
-          isConverting={isConverting}
-          progressText={progressText}
-          result={result}
-          onConvert={handleConvert}
-          onReset={() => setResult(null)}
-          disabled={!metadata}
-        />
-      )}
     </div>
   );
 }

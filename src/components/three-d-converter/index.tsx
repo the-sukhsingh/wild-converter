@@ -1,18 +1,22 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
+import {
+  type ThreeDFormat,
+  THREE_D_FORMATS,
+  detectThreeDFormat,
+} from "@/lib/three-d-format-utils";
 import {
   parseThreeDFile,
   convertThreeD,
   type ThreeDConversionOptions,
-  type ThreeDConversionResult,
   type ThreeDMetadata,
+  type ThreeDConversionResult,
 } from "@/lib/three-d-converter";
-import { type ThreeDFormat } from "@/lib/three-d-format-utils";
 import { ThreeDDropzone } from "./three-d-dropzone";
 import { ThreeDHeader } from "./three-d-header";
 import { ThreeDFormatSelector } from "./three-d-format-selector";
-import { ThreeDOptions } from "./three-d-options";
+import { ThreeDOptionsPanel } from "./three-d-options";
 import { ThreeDActionBar } from "./three-d-action-bar";
 
 interface ThreeDConverterProps {
@@ -23,157 +27,186 @@ interface ThreeDConverterProps {
 export function ThreeDConverter({
   initialFile,
   onClearInitialFile,
-}: ThreeDConverterProps) {
-  const [file, setFile] = useState<File | null>(null);
+}: ThreeDConverterProps = {}) {
+  const [file, setFile] = useState<File | null>(initialFile || null);
   const [metadata, setMetadata] = useState<ThreeDMetadata | null>(null);
-  const [isParsing, setIsParsing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const [selectedFormat, setSelectedFormat] = useState<ThreeDFormat>("glb");
+  const [targetFormat, setTargetFormat] = useState<ThreeDFormat>("glb");
+  const [searchQuery, setSearchQuery] = useState("");
   const [options, setOptions] = useState<ThreeDConversionOptions>({
     format: "glb",
-    binary: true,
     scale: 1,
     upAxis: "Y",
-    computeNormals: true,
+    binary: true,
+    computeNormals: false,
     centerMesh: false,
   });
 
+  const [exactProbedSize, setExactProbedSize] = useState<number | null>(null);
+  const [isProbing, setIsProbing] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
-  const [progressText, setProgressText] = useState("");
-  const [result, setResult] = useState<ThreeDConversionResult | null>(null);
+  const [conversionResult, setConversionResult] = useState<ThreeDConversionResult | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const handleFileSelect = useCallback(async (selectedFile: File) => {
-    setIsParsing(true);
-    setError(null);
-    setResult(null);
+  // Sync initialFile
+  useEffect(() => {
+    if (initialFile && initialFile !== file) {
+      handleFileSelect(initialFile);
+    }
+  }, [initialFile]);
 
+  const handleFileSelect = useCallback(async (f: File) => {
+    setFile(f);
+    setErrorMsg(null);
+    setConversionResult(null);
     try {
-      const meta = await parseThreeDFile(selectedFile);
-      setFile(selectedFile);
+      const meta = await parseThreeDFile(f);
       setMetadata(meta);
 
-      const defaultFmt: ThreeDFormat = selectedFile.name.endsWith(".stl")
-        ? "glb"
-        : selectedFile.name.endsWith(".glb")
-        ? "stl"
-        : "glb";
-      setSelectedFormat(defaultFmt);
+      const defaultFmt: ThreeDFormat = meta.format === "glb" ? "obj" : "glb";
+      setTargetFormat(defaultFmt);
       setOptions((prev) => ({
         ...prev,
         format: defaultFmt,
       }));
-    } catch (err: unknown) {
+    } catch (err) {
       console.error("3D parse error:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to parse 3D file geometry. File format might be corrupted or unsupported."
-      );
-    } finally {
-      setIsParsing(false);
+      setErrorMsg(err instanceof Error ? err.message : "Failed to parse 3D geometry");
     }
   }, []);
 
+  // Live estimated size calculation
   useEffect(() => {
-    if (initialFile) {
-      handleFileSelect(initialFile);
+    if (!metadata || !targetFormat) {
+      setExactProbedSize(null);
+      return;
     }
-  }, [initialFile, handleFileSelect]);
+    const faceCount = metadata.faceCount;
+    let estBytes = 0;
 
-  const handleFormatChange = (fmt: ThreeDFormat) => {
-    setSelectedFormat(fmt);
-    setOptions((prev) => ({
-      ...prev,
-      format: fmt,
-      binary: fmt.endsWith("-ls") ? true : prev.binary,
-    }));
-  };
+    if (targetFormat === "stl") {
+      estBytes = options.binary ? 84 + faceCount * 50 : faceCount * 250;
+    } else if (targetFormat === "obj") {
+      estBytes = Math.round(faceCount * 120);
+    } else if (targetFormat === "glb") {
+      estBytes = Math.round(faceCount * 36 + 1024);
+    } else if (targetFormat === "gltf") {
+      estBytes = Math.round(faceCount * 80 + 2048);
+    } else {
+      estBytes = Math.round(faceCount * 40);
+    }
 
-  const handleClear = () => {
+    setExactProbedSize(estBytes);
+  }, [metadata, targetFormat, options]);
+
+  // Reset conversion state on parameter changes
+  useEffect(() => {
+    setConversionResult(null);
+    setErrorMsg(null);
+  }, [file, targetFormat, options]);
+
+  const handleRemove = useCallback(() => {
     setFile(null);
     setMetadata(null);
-    setResult(null);
-    setError(null);
-    if (onClearInitialFile) {
-      onClearInitialFile();
-    }
-  };
+    setConversionResult(null);
+    setErrorMsg(null);
+    if (onClearInitialFile) onClearInitialFile();
+  }, [onClearInitialFile]);
 
-  const handleConvert = async () => {
-    if (!metadata || !file) return;
-
+  const handleConvert = useCallback(async () => {
+    if (!file || !metadata) return;
     setIsConverting(true);
-    setProgressText("Processing 3D vertex buffers & exporting mesh...");
-    setError(null);
+    setErrorMsg(null);
 
     try {
-      const res = await convertThreeD(metadata, file.name, options);
-      setResult(res);
-    } catch (err: unknown) {
-      console.error("3D conversion failed:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to convert 3D model. Please adjust options and retry."
-      );
-    } finally {
+      const res = await convertThreeD(metadata, file.name, {
+        ...options,
+        format: targetFormat,
+      });
+      setConversionResult(res);
       setIsConverting(false);
-      setProgressText("");
+    } catch (err) {
+      console.error("Conversion error:", err);
+      setErrorMsg(err instanceof Error ? err.message : "3D mesh conversion failed");
+      setIsConverting(false);
     }
-  };
+  }, [file, metadata, targetFormat, options]);
+
+  const hasFile = !!file;
+  const targetMeta = THREE_D_FORMATS[targetFormat];
+  const outputName = file
+    ? `${file.name.replace(/\.[^/.]+$/, "")}.${targetMeta?.extension || "glb"}`
+    : "";
+
+  const sizeDiffPercent = useMemo(() => {
+    if (!exactProbedSize || !file?.size) return null;
+    return Math.round(((exactProbedSize - file.size) / file.size) * 100);
+  }, [exactProbedSize, file?.size]);
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-4 md:px-8 py-4 flex-1 flex flex-col justify-between overflow-y-auto">
-      <div className="space-y-4">
-        {!file || !metadata ? (
-          <div className="space-y-4 py-8">
-            <ThreeDDropzone
-              onFileSelect={handleFileSelect}
-              isProcessing={isParsing}
-            />
-            {error && (
-              <div className="p-3 rounded bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-mono">
-                {error}
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-5">
-            <ThreeDHeader metadata={metadata} onClear={handleClear} />
+    <div className="relative flex-1 w-full max-w-5xl mx-auto px-4 md:px-8 overflow-hidden">
+      {/* State 1: Dropzone */}
+      <div
+        className={`absolute inset-0 px-4 md:px-8 py-6 flex flex-col justify-center transition-opacity duration-200 ${
+          !hasFile ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+        aria-hidden={hasFile}
+      >
+        <ThreeDDropzone onFileSelect={handleFileSelect} />
+      </div>
 
+      {/* State 2: Active Workspace */}
+      <div
+        className={`absolute inset-0 px-4 md:px-8 py-6 flex flex-col justify-between transition-opacity duration-200 ${
+          hasFile ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+        aria-hidden={!hasFile}
+      >
+        {file && metadata && (
+          <div className="h-full flex flex-col justify-between gap-4">
+            {/* Header */}
+            <ThreeDHeader metadata={metadata} onRemove={handleRemove} />
+
+            {/* Format Selector */}
             <ThreeDFormatSelector
-              selectedFormat={selectedFormat}
-              onSelectFormat={handleFormatChange}
-              disabled={isConverting}
+              selectedFormat={targetFormat}
+              inputFormat={metadata.format}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              onSelectFormat={(fmt) => {
+                setTargetFormat(fmt);
+                setSearchQuery("");
+              }}
             />
 
-            <ThreeDOptions
+            {/* Options Panel */}
+            <ThreeDOptionsPanel
+              targetFormat={targetFormat}
               options={options}
               metadata={metadata}
-              onChange={setOptions}
-              disabled={isConverting}
+              onOptionsChange={setOptions}
             />
 
-            {error && (
-              <div className="p-3 rounded bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-mono">
-                {error}
+            {/* Action Bar */}
+            <ThreeDActionBar
+              targetFormat={targetFormat}
+              exactProbedSize={exactProbedSize}
+              sizeDiffPercent={sizeDiffPercent}
+              isProbing={isProbing}
+              isConverting={isConverting}
+              resultUrl={conversionResult?.url || null}
+              resultBlob={conversionResult?.blob || null}
+              outputName={outputName}
+              onConvert={handleConvert}
+            />
+
+            {errorMsg && (
+              <div className="text-xs font-mono text-destructive">
+                {errorMsg}
               </div>
             )}
           </div>
         )}
       </div>
-
-      {file && metadata && (
-        <ThreeDActionBar
-          isConverting={isConverting}
-          progressText={progressText}
-          result={result}
-          onConvert={handleConvert}
-          onReset={() => setResult(null)}
-          disabled={!metadata}
-        />
-      )}
     </div>
   );
 }

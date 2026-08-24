@@ -1,101 +1,117 @@
 "use client";
 
-import { Sliders, Code, Sparkles, Edit3 } from "lucide-react";
 import { FONT_FORMATS } from "@/lib/font-format-utils";
 import type { FontConversionOptions, FontMetadata } from "@/lib/font-converter";
 
 interface FontOptionsProps {
+  targetFormat: string;
   options: FontConversionOptions;
-  metadata: FontMetadata;
-  onChange: (options: FontConversionOptions) => void;
-  disabled?: boolean;
+  metadata: FontMetadata | null;
+  onOptionsChange: (options: FontConversionOptions) => void;
 }
 
-export function FontOptions({
+export function FontOptionsPanel({
+  targetFormat,
   options,
   metadata,
-  onChange,
-  disabled = false,
+  onOptionsChange,
 }: FontOptionsProps) {
   const formatInfo = FONT_FORMATS[options.format] || FONT_FORMATS.woff2;
 
   return (
-    <div className="space-y-4 pt-2">
-      <div className="flex items-center gap-2">
-        <Sliders className="w-3.5 h-3.5 text-[var(--muted-foreground)]" />
-        <label className="text-xs font-mono uppercase tracking-wider text-[var(--muted-foreground)]">
-          Font Packaging & Web Integration Options
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 py-3 border-y border-[var(--border)]">
+      {/* Custom Family Name */}
+      <div className="flex flex-col gap-1.5">
+        <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+          <span>Family Name</span>
+          <span className="font-semibold text-[var(--foreground)] truncate max-w-[120px]">
+            {options.customFontFamily || metadata?.familyName || "Original"}
+          </span>
+        </div>
+        <input
+          type="text"
+          value={options.customFontFamily || ""}
+          onChange={(e) =>
+            onOptionsChange({
+              ...options,
+              customFontFamily: e.target.value,
+            })
+          }
+          placeholder={metadata?.familyName || "e.g. Inter"}
+          className="w-full h-8 px-2.5 text-xs font-mono bg-[var(--card)] text-[var(--foreground)] rounded-md outline-none focus:ring-1 focus:ring-[var(--ring)]"
+        />
+      </div>
+
+      {/* Subset ASCII */}
+      <div className="flex flex-col justify-end">
+        <label
+          className={`flex items-center gap-2 text-xs font-mono h-8 px-2.5 rounded-md cursor-pointer select-none transition-colors ${
+            options.subsetAsciiOnly
+              ? "bg-[var(--primary)] text-[var(--primary-foreground)] font-medium"
+              : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+          }`}
+        >
+          <input
+            type="checkbox"
+            checked={options.subsetAsciiOnly}
+            onChange={(e) =>
+              onOptionsChange({
+                ...options,
+                subsetAsciiOnly: e.target.checked,
+              })
+            }
+            className="rounded accent-[var(--foreground)] sr-only"
+          />
+          <span>Subset ASCII Glyphs Only</span>
         </label>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-        {/* Custom Font Family Name */}
-        <div className="space-y-1.5">
-          <label className="text-xs text-[var(--muted-foreground)] font-mono flex items-center justify-between">
-            <span className="flex items-center gap-1">
-              <Edit3 className="w-3 h-3" />
-              CSS Font Family Name
-            </span>
-          </label>
+      {/* Include CSS @font-face Toggle */}
+      <div className="flex flex-col justify-end">
+        <label
+          className={`flex items-center gap-2 text-xs font-mono h-8 px-2.5 rounded-md cursor-pointer select-none transition-colors ${
+            options.generateCssFace
+              ? "bg-[var(--primary)] text-[var(--primary-foreground)] font-medium"
+              : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+          }`}
+        >
           <input
-            type="text"
-            disabled={disabled}
-            value={options.customFontFamily ?? metadata.familyName}
-            placeholder={metadata.familyName}
+            type="checkbox"
+            checked={options.generateCssFace}
             onChange={(e) =>
-              onChange({ ...options, customFontFamily: e.target.value })
+              onOptionsChange({
+                ...options,
+                generateCssFace: e.target.checked,
+              })
             }
-            className="w-full bg-[var(--foreground)]/5 border border-[var(--border)] rounded px-2.5 py-1.5 text-xs text-[var(--foreground)] focus:outline-none focus:ring-1 focus:ring-[var(--foreground)]"
+            className="rounded accent-[var(--foreground)] sr-only"
           />
-        </div>
+          <span>Generate CSS @font-face</span>
+        </label>
+      </div>
 
-        {/* Generate CSS @font-face code */}
-        <div className="space-y-1.5 flex flex-col justify-end">
-          <label
-            className={`flex items-center gap-2 text-xs font-mono p-2 rounded border border-[var(--border)] cursor-pointer select-none ${
-              options.generateCssFace
-                ? "bg-[var(--foreground)]/10 text-[var(--foreground)] font-medium"
-                : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] bg-[var(--foreground)]/[0.02]"
-            }`}
-          >
-            <input
-              type="checkbox"
-              checked={options.generateCssFace}
-              disabled={disabled}
-              onChange={(e) =>
-                onChange({ ...options, generateCssFace: e.target.checked })
-              }
-              className="rounded accent-[var(--foreground)]"
-            />
-            <Code className="w-3.5 h-3.5 shrink-0" />
-            <span>Generate CSS @font-face Snippet</span>
-          </label>
-        </div>
-
-        {/* Preserve Hinting Tables */}
-        {formatInfo.supportsHinting && (
-          <div className="space-y-1.5 flex flex-col justify-end">
-            <label
-              className={`flex items-center gap-2 text-xs font-mono p-2 rounded border border-[var(--border)] cursor-pointer select-none ${
-                options.hinting
-                  ? "bg-[var(--foreground)]/10 text-[var(--foreground)] font-medium"
-                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] bg-[var(--foreground)]/[0.02]"
-              }`}
-            >
-              <input
-                type="checkbox"
-                checked={options.hinting}
-                disabled={disabled}
-                onChange={(e) =>
-                  onChange({ ...options, hinting: e.target.checked })
-                }
-                className="rounded accent-[var(--foreground)]"
-              />
-              <Sparkles className="w-3.5 h-3.5 shrink-0 text-amber-500" />
-              <span>Preserve Hinting & TrueType Instructions</span>
-            </label>
-          </div>
-        )}
+      {/* Preserve Hinting Toggle */}
+      <div className="flex flex-col justify-end">
+        <label
+          className={`flex items-center gap-2 text-xs font-mono h-8 px-2.5 rounded-md cursor-pointer select-none transition-colors ${
+            options.hinting
+              ? "bg-[var(--primary)] text-[var(--primary-foreground)] font-medium"
+              : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+          }`}
+        >
+          <input
+            type="checkbox"
+            checked={options.hinting}
+            onChange={(e) =>
+              onOptionsChange({
+                ...options,
+                hinting: e.target.checked,
+              })
+            }
+            className="rounded accent-[var(--foreground)] sr-only"
+          />
+          <span>Preserve TrueType Hinting</span>
+        </label>
       </div>
     </div>
   );

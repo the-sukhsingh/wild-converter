@@ -1,18 +1,22 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
+import {
+  type AudioFormat,
+  AUDIO_FORMATS,
+  detectAudioFormat,
+} from "@/lib/audio-format-utils";
 import {
   parseAudioFile,
   convertAudio,
   type AudioConversionOptions,
-  type AudioConversionResult,
   type AudioMetadata,
+  type AudioConversionResult,
 } from "@/lib/audio-converter";
-import { AUDIO_FORMATS, type AudioFormat } from "@/lib/audio-format-utils";
 import { AudioDropzone } from "./audio-dropzone";
 import { AudioHeader } from "./audio-header";
 import { AudioFormatSelector } from "./audio-format-selector";
-import { AudioOptions } from "./audio-options";
+import { AudioOptionsPanel } from "./audio-options";
 import { AudioActionBar } from "./audio-action-bar";
 
 interface AudioConverterProps {
@@ -23,14 +27,12 @@ interface AudioConverterProps {
 export function AudioConverter({
   initialFile,
   onClearInitialFile,
-}: AudioConverterProps) {
-  const [file, setFile] = useState<File | null>(null);
+}: AudioConverterProps = {}) {
+  const [file, setFile] = useState<File | null>(initialFile || null);
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
   const [metadata, setMetadata] = useState<AudioMetadata | null>(null);
-  const [isParsing, setIsParsing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const [selectedFormat, setSelectedFormat] = useState<AudioFormat>("mp3");
+  const [targetFormat, setTargetFormat] = useState<AudioFormat>("mp3");
+  const [searchQuery, setSearchQuery] = useState("");
   const [options, setOptions] = useState<AudioConversionOptions>({
     format: "mp3",
     sampleRate: 44100,
@@ -40,144 +42,174 @@ export function AudioConverter({
     normalize: false,
   });
 
+  const [exactProbedSize, setExactProbedSize] = useState<number | null>(null);
+  const [isProbing, setIsProbing] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
-  const [progressText, setProgressText] = useState("");
-  const [result, setResult] = useState<AudioConversionResult | null>(null);
+  const [conversionResult, setConversionResult] = useState<AudioConversionResult | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const handleFileSelect = useCallback(async (selectedFile: File) => {
-    setIsParsing(true);
-    setError(null);
-    setResult(null);
+  // Sync initialFile
+  useEffect(() => {
+    if (initialFile && initialFile !== file) {
+      handleFileSelect(initialFile);
+    }
+  }, [initialFile]);
 
+  const handleFileSelect = useCallback(async (f: File) => {
+    setFile(f);
+    setErrorMsg(null);
+    setConversionResult(null);
     try {
-      const { buffer, metadata: meta } = await parseAudioFile(selectedFile);
-      setFile(selectedFile);
+      const { buffer, metadata: meta } = await parseAudioFile(f);
       setAudioBuffer(buffer);
       setMetadata(meta);
 
-      // Default target format: if source is mp3 -> wav, else -> mp3
       const defaultFmt: AudioFormat = meta.format === "mp3" ? "wav" : "mp3";
-      setSelectedFormat(defaultFmt);
+      setTargetFormat(defaultFmt);
       setOptions((prev) => ({
         ...prev,
         format: defaultFmt,
         sampleRate: buffer.sampleRate >= 48000 ? 48000 : 44100,
         channels: buffer.numberOfChannels === 1 ? 1 : 2,
       }));
-    } catch (err: unknown) {
+    } catch (err) {
       console.error("Audio parse error:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to decode audio file. Format might be corrupted or unsupported."
-      );
-    } finally {
-      setIsParsing(false);
+      setErrorMsg(err instanceof Error ? err.message : "Failed to decode audio file");
     }
   }, []);
 
+  // Live estimated size calculation
   useEffect(() => {
-    if (initialFile) {
-      handleFileSelect(initialFile);
+    if (!metadata || !targetFormat) {
+      setExactProbedSize(null);
+      return;
     }
-  }, [initialFile, handleFileSelect]);
+    const duration = metadata.duration;
+    const formatInfo = AUDIO_FORMATS[targetFormat];
+    let estBytes = 0;
 
-  const handleFormatChange = (fmt: AudioFormat) => {
-    setSelectedFormat(fmt);
-    const fmtInfo = AUDIO_FORMATS[fmt];
-    setOptions((prev) => ({
-      ...prev,
-      format: fmt,
-      bitrate: fmt.endsWith("-ls") ? 320 : prev.bitrate,
-      bitDepth: fmtInfo.isLossless || fmt.endsWith("-ls") ? 24 : prev.bitDepth,
-    }));
-  };
+    if (formatInfo.isLossless || targetFormat.endsWith("-ls")) {
+      const bytesPerSample = (options.bitDepth || 16) / 8;
+      estBytes = Math.round(duration * options.sampleRate * options.channels * bytesPerSample);
+      if (targetFormat.includes("flac")) estBytes = Math.round(estBytes * 0.55);
+    } else {
+      const kbps = options.bitrate || 192;
+      estBytes = Math.round((duration * kbps * 1000) / 8);
+    }
 
-  const handleClear = () => {
+    setExactProbedSize(estBytes);
+  }, [metadata, targetFormat, options]);
+
+  // Reset conversion state on parameter changes
+  useEffect(() => {
+    setConversionResult(null);
+    setErrorMsg(null);
+  }, [file, targetFormat, options]);
+
+  const handleRemove = useCallback(() => {
     setFile(null);
     setAudioBuffer(null);
     setMetadata(null);
-    setResult(null);
-    setError(null);
-    if (onClearInitialFile) {
-      onClearInitialFile();
-    }
-  };
+    setConversionResult(null);
+    setErrorMsg(null);
+    if (onClearInitialFile) onClearInitialFile();
+  }, [onClearInitialFile]);
 
-  const handleConvert = async () => {
+  const handleConvert = useCallback(async () => {
     if (!audioBuffer || !file) return;
-
     setIsConverting(true);
-    setProgressText("Applying DSP & audio encoding...");
-    setError(null);
+    setErrorMsg(null);
 
     try {
-      const res = await convertAudio(audioBuffer, file.name, options);
-      setResult(res);
-    } catch (err: unknown) {
-      console.error("Audio conversion failed:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to convert audio stream. Please adjust options and retry."
-      );
-    } finally {
+      const res = await convertAudio(audioBuffer, file.name, {
+        ...options,
+        format: targetFormat,
+      });
+      setConversionResult(res);
       setIsConverting(false);
-      setProgressText("");
+    } catch (err) {
+      console.error("Conversion error:", err);
+      setErrorMsg(err instanceof Error ? err.message : "Audio conversion failed");
+      setIsConverting(false);
     }
-  };
+  }, [audioBuffer, file, targetFormat, options]);
+
+  const hasFile = !!file;
+  const targetMeta = AUDIO_FORMATS[targetFormat];
+  const outputName = file
+    ? `${file.name.replace(/\.[^/.]+$/, "")}.${targetMeta?.extension || "mp3"}`
+    : "";
+
+  const sizeDiffPercent = useMemo(() => {
+    if (!exactProbedSize || !file?.size) return null;
+    return Math.round(((exactProbedSize - file.size) / file.size) * 100);
+  }, [exactProbedSize, file?.size]);
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-4 md:px-8 py-4 flex-1 flex flex-col justify-between overflow-y-auto">
-      <div className="space-y-4">
-        {!file || !metadata ? (
-          <div className="space-y-4 py-8">
-            <AudioDropzone
-              onFileSelect={handleFileSelect}
-              isProcessing={isParsing}
-            />
-            {error && (
-              <div className="p-3 rounded bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-mono">
-                {error}
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-5">
-            <AudioHeader metadata={metadata} onClear={handleClear} />
+    <div className="relative flex-1 w-full max-w-5xl mx-auto px-4 md:px-8 overflow-hidden">
+      {/* State 1: Dropzone */}
+      <div
+        className={`absolute inset-0 px-4 md:px-8 py-6 flex flex-col justify-center transition-opacity duration-200 ${
+          !hasFile ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+        aria-hidden={hasFile}
+      >
+        <AudioDropzone onFileSelect={handleFileSelect} />
+      </div>
 
+      {/* State 2: Active Workspace */}
+      <div
+        className={`absolute inset-0 px-4 md:px-8 py-6 flex flex-col justify-between transition-opacity duration-200 ${
+          hasFile ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+        aria-hidden={!hasFile}
+      >
+        {file && metadata && (
+          <div className="h-full flex flex-col justify-between gap-4">
+            {/* Header */}
+            <AudioHeader metadata={metadata} onRemove={handleRemove} />
+
+            {/* Format Selector */}
             <AudioFormatSelector
-              selectedFormat={selectedFormat}
-              onSelectFormat={handleFormatChange}
-              disabled={isConverting}
+              selectedFormat={targetFormat}
+              inputFormat={metadata.format}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              onSelectFormat={(fmt) => {
+                setTargetFormat(fmt);
+                setSearchQuery("");
+              }}
             />
 
-            <AudioOptions
+            {/* Options Panel */}
+            <AudioOptionsPanel
+              targetFormat={targetFormat}
               options={options}
               metadata={metadata}
-              onChange={setOptions}
-              disabled={isConverting}
+              onOptionsChange={setOptions}
             />
 
-            {error && (
-              <div className="p-3 rounded bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-mono">
-                {error}
+            {/* Action Bar */}
+            <AudioActionBar
+              targetFormat={targetFormat}
+              exactProbedSize={exactProbedSize}
+              sizeDiffPercent={sizeDiffPercent}
+              isProbing={isProbing}
+              isConverting={isConverting}
+              resultUrl={conversionResult?.url || null}
+              resultBlob={conversionResult?.blob || null}
+              outputName={outputName}
+              onConvert={handleConvert}
+            />
+
+            {errorMsg && (
+              <div className="text-xs font-mono text-destructive">
+                {errorMsg}
               </div>
             )}
           </div>
         )}
       </div>
-
-      {file && metadata && (
-        <AudioActionBar
-          isConverting={isConverting}
-          progressText={progressText}
-          result={result}
-          onConvert={handleConvert}
-          onReset={() => setResult(null)}
-          disabled={!audioBuffer}
-        />
-      )}
     </div>
   );
 }

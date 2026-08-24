@@ -1,126 +1,90 @@
 "use client";
 
-import { Download, Loader2, Play, RefreshCw, CheckCircle2, Eye } from "lucide-react";
-import type { VectorConversionResult } from "@/lib/vector-converter";
+import { ArrowRight, Download, Loader2 } from "lucide-react";
+import { type VectorFormat, VECTOR_FORMATS } from "@/lib/vector-format-utils";
+import { formatFileSize } from "@/lib/format-utils";
 
 interface VectorActionBarProps {
+  targetFormat: VectorFormat;
+  exactProbedSize: number | null;
+  sizeDiffPercent: number | null;
+  isProbing: boolean;
   isConverting: boolean;
-  progressText?: string;
-  result: VectorConversionResult | null;
+  resultUrl: string | null;
+  resultBlob: Blob | null;
+  outputName: string;
   onConvert: () => void;
-  onReset: () => void;
-  disabled?: boolean;
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
 }
 
 export function VectorActionBar({
+  targetFormat,
+  exactProbedSize,
+  sizeDiffPercent,
+  isProbing,
   isConverting,
-  progressText,
-  result,
+  resultUrl,
+  resultBlob,
+  outputName,
   onConvert,
-  onReset,
-  disabled = false,
 }: VectorActionBarProps) {
-  const handleDownload = () => {
-    if (!result) return;
-    const a = document.createElement("a");
-    a.href = result.url;
-    a.download = result.fileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  };
+  const targetMeta = VECTOR_FORMATS[targetFormat];
 
   return (
-    <div className="w-full pt-4 border-t border-[var(--border)] space-y-3">
-      {result ? (
-        <div className="space-y-3">
-          {/* Preview for converted vector output */}
-          <div className="p-3 bg-[var(--foreground)]/[0.03] border border-[var(--border)] rounded flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="flex items-center gap-2 min-w-0 w-full sm:w-auto">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-              <div className="min-w-0">
-                <p className="text-xs font-medium text-[var(--foreground)] truncate">
-                  {result.fileName}
-                </p>
-                <p className="text-[11px] font-mono text-[var(--muted-foreground)]">
-                  {formatBytes(result.fileSizeBytes)} • {result.width}×{result.height} px
-                </p>
-              </div>
-            </div>
+    <div className="flex items-center justify-between gap-4 pt-1">
+      {/* Live Size Display */}
+      <div className="flex items-baseline gap-2">
+        <span className="text-base md:text-lg font-mono font-semibold text-[var(--foreground)]">
+          {exactProbedSize ? formatFileSize(exactProbedSize) : "—"}
+        </span>
 
-            <div className="flex items-center gap-2">
-              <a
-                href={result.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 text-xs font-mono text-[var(--muted-foreground)] hover:text-[var(--foreground)] px-2.5 py-1.5 rounded hover:bg-[var(--foreground)]/5 transition-colors"
-              >
-                <Eye className="w-3.5 h-3.5" />
-                <span>Open in Tab</span>
-              </a>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-end gap-2">
-            <button
-              type="button"
-              onClick={onReset}
-              className="flex items-center gap-1.5 px-3 py-2 rounded text-xs font-mono text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--foreground)]/5 transition-colors cursor-pointer"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span>Convert Another</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleDownload}
-              className="flex items-center gap-2 px-5 py-2 rounded bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 transition-opacity text-xs font-mono font-medium cursor-pointer"
-            >
-              <Download className="w-4 h-4" />
-              <span>Download {result.fileName}</span>
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="flex items-center justify-between">
-          <div className="text-xs font-mono text-[var(--muted-foreground)]">
-            {isConverting ? (
-              <span className="flex items-center gap-2">
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                {progressText || "Compiling vector geometry..."}
-              </span>
-            ) : (
-              <span>100% Client-Side PostScript & CAD Vector Engine</span>
-            )}
-          </div>
-
-          <button
-            type="button"
-            disabled={disabled || isConverting}
-            onClick={onConvert}
-            className="flex items-center gap-2 px-6 py-2 rounded bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 disabled:opacity-50 transition-all text-xs font-mono font-medium cursor-pointer"
+        {sizeDiffPercent !== null && sizeDiffPercent !== 0 && (
+          <span
+            className={`text-xs font-mono font-medium px-1.5 py-0.5 rounded-full ${
+              sizeDiffPercent < 0
+                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+            }`}
           >
-            {isConverting ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>Converting...</span>
-              </>
-            ) : (
-              <>
-                <Play className="w-3.5 h-3.5 fill-current" />
-                <span>Convert Vector</span>
-              </>
-            )}
-          </button>
-        </div>
+            {sizeDiffPercent > 0 ? `+${sizeDiffPercent}%` : `${sizeDiffPercent}%`}
+          </span>
+        )}
+
+        {isProbing && (
+          <span className="text-xs font-mono text-[var(--muted-foreground)] opacity-60">
+            measuring…
+          </span>
+        )}
+      </div>
+
+      {/* Action Button: Convert or Download */}
+      {resultUrl && resultBlob ? (
+        <a
+          href={resultUrl}
+          download={outputName}
+          className="h-10 px-6 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-xs md:text-sm font-medium inline-flex items-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all shadow-sm"
+        >
+          <Download className="w-4 h-4" />
+          <span>Download {targetMeta?.label.split(" ")[0]} ({formatFileSize(resultBlob.size)})</span>
+        </a>
+      ) : (
+        <button
+          type="button"
+          onClick={onConvert}
+          disabled={isConverting}
+          className="h-10 px-6 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-xs md:text-sm font-medium inline-flex items-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm cursor-pointer"
+        >
+          {isConverting ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Compiling…</span>
+            </>
+          ) : (
+            <>
+              <span>Convert to {targetMeta?.label.split(" ")[0]}</span>
+              <ArrowRight className="w-4 h-4" />
+            </>
+          )}
+        </button>
       )}
     </div>
   );
