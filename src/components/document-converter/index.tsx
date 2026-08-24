@@ -54,6 +54,8 @@ export function DocumentConverter({
   const [probedResult, setProbedResult] = useState<DocumentConversionResult | null>(null);
   const [isProbing, setIsProbing] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
+  const [conversionProgress, setConversionProgress] = useState(0);
+  const [conversionStatusText, setConversionStatusText] = useState("");
   const [conversionResult, setConversionResult] = useState<DocumentConversionResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -149,6 +151,8 @@ export function DocumentConverter({
   useEffect(() => {
     setConversionResult(null);
     setErrorMsg(null);
+    setConversionProgress(0);
+    setConversionStatusText("");
   }, [file, targetFormat, options]);
 
   const handleRemove = useCallback(() => {
@@ -159,6 +163,8 @@ export function DocumentConverter({
     setProbedResult(null);
     setConversionResult(null);
     setErrorMsg(null);
+    setConversionProgress(0);
+    setConversionStatusText("");
     if (onClearInitialFile) onClearInitialFile();
   }, [onClearInitialFile]);
 
@@ -166,13 +172,19 @@ export function DocumentConverter({
     if (!file) return;
     setIsConverting(true);
     setErrorMsg(null);
+    setConversionProgress(15);
+    setConversionStatusText("Compiling document structure...");
 
     try {
       let result = probedResult;
       if (!result) {
-        result = await convertDocument(file, targetFormat, options);
+        result = await convertDocument(file, targetFormat, options, (progress, text) => {
+          setConversionProgress(progress);
+          setConversionStatusText(text);
+        });
       }
       setConversionResult(result);
+      setConversionProgress(100);
       setIsConverting(false);
     } catch (err) {
       console.error("Conversion error:", err);
@@ -183,6 +195,11 @@ export function DocumentConverter({
 
   const hasFile = !!file;
   const outputName = file ? buildDocumentOutputName(file.name, targetFormat) : "";
+
+  const resultUrl = useMemo(() => {
+    if (!conversionResult?.blob) return null;
+    return URL.createObjectURL(conversionResult.blob);
+  }, [conversionResult?.blob]);
 
   const sizeDiffPercent = useMemo(() => {
     if (!exactProbedSize || !file?.size) return null;
@@ -219,7 +236,7 @@ export function DocumentConverter({
               onPreview={() => setIsPreviewOpen(true)}
             />
 
-            {/* Format Selector */}
+            {/* Target Format Selector */}
             <DocumentFormatSelector
               selectedFormat={targetFormat}
               inputFormat={inputFormat}
@@ -231,7 +248,7 @@ export function DocumentConverter({
               }}
             />
 
-            {/* Options Panel */}
+            {/* Format-Specific Options Panel */}
             <DocumentOptionsPanel
               targetFormat={targetFormat}
               options={options}
@@ -245,7 +262,10 @@ export function DocumentConverter({
               sizeDiffPercent={sizeDiffPercent}
               isProbing={isProbing}
               isConverting={isConverting}
-              actualOutputBlob={conversionResult?.blob || null}
+              progress={conversionProgress}
+              progressText={conversionStatusText}
+              resultUrl={resultUrl}
+              resultBlob={conversionResult?.blob || null}
               outputName={outputName}
               onConvert={handleConvert}
             />

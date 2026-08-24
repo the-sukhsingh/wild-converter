@@ -41,6 +41,8 @@ export function ArchiveConverter({
   const [exactProbedSize, setExactProbedSize] = useState<number | null>(null);
   const [isProbing, setIsProbing] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
+  const [conversionProgress, setConversionProgress] = useState(0);
+  const [conversionStatusText, setConversionStatusText] = useState("");
   const [conversionResult, setConversionResult] = useState<ArchiveConversionResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -103,6 +105,8 @@ export function ArchiveConverter({
   useEffect(() => {
     setConversionResult(null);
     setErrorMsg(null);
+    setConversionProgress(0);
+    setConversionStatusText("");
   }, [file, targetFormat, options]);
 
   const handleRemove = useCallback(() => {
@@ -110,6 +114,8 @@ export function ArchiveConverter({
     setMetadata(null);
     setConversionResult(null);
     setErrorMsg(null);
+    setConversionProgress(0);
+    setConversionStatusText("");
     if (onClearInitialFile) onClearInitialFile();
   }, [onClearInitialFile]);
 
@@ -117,13 +123,24 @@ export function ArchiveConverter({
     if (!metadata || !file) return;
     setIsConverting(true);
     setErrorMsg(null);
+    setConversionProgress(10);
+    setConversionStatusText("Preparing archive stream...");
 
     try {
-      const res = await convertArchive(metadata, file.name, {
-        ...options,
-        format: targetFormat,
-      });
+      const res = await convertArchive(
+        metadata,
+        file.name,
+        {
+          ...options,
+          format: targetFormat,
+        },
+        (progress, text) => {
+          setConversionProgress(progress);
+          setConversionStatusText(text);
+        }
+      );
       setConversionResult(res);
+      setConversionProgress(100);
       setIsConverting(false);
     } catch (err) {
       console.error("Conversion error:", err);
@@ -194,6 +211,8 @@ export function ArchiveConverter({
               sizeDiffPercent={sizeDiffPercent}
               isProbing={isProbing}
               isConverting={isConverting}
+              progress={conversionProgress}
+              progressText={conversionStatusText}
               resultUrl={conversionResult?.url || null}
               resultBlob={conversionResult?.blob || null}
               outputName={outputName}

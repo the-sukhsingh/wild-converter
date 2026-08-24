@@ -12,7 +12,7 @@ import { parseLegacyDocument } from "./legacy-parser";
  */
 export async function parseDocument(
   file: File,
-  detectedFormat: DocumentFormat | null
+  detectedFormat: DocumentFormat | null = null
 ): Promise<DocumentIR> {
   const ext = (file.name.split(".").pop()?.toLowerCase() || detectedFormat || "txt") as string;
 

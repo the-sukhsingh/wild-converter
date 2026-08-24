@@ -35,16 +35,18 @@ export function AudioConverter({
   const [searchQuery, setSearchQuery] = useState("");
   const [options, setOptions] = useState<AudioConversionOptions>({
     format: "mp3",
+    bitrate: 256,
     sampleRate: 44100,
-    bitrate: 192,
     channels: 2,
-    bitDepth: 16,
     normalize: false,
+    bitDepth: 16,
   });
 
   const [exactProbedSize, setExactProbedSize] = useState<number | null>(null);
   const [isProbing, setIsProbing] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
+  const [conversionProgress, setConversionProgress] = useState(0);
+  const [conversionStatusText, setConversionStatusText] = useState("");
   const [conversionResult, setConversionResult] = useState<AudioConversionResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -69,8 +71,8 @@ export function AudioConverter({
       setOptions((prev) => ({
         ...prev,
         format: defaultFmt,
-        sampleRate: buffer.sampleRate >= 48000 ? 48000 : 44100,
-        channels: buffer.numberOfChannels === 1 ? 1 : 2,
+        sampleRate: buffer.sampleRate,
+        channels: Math.min(buffer.numberOfChannels, 2) as 1 | 2,
       }));
     } catch (err) {
       console.error("Audio parse error:", err);
@@ -88,13 +90,11 @@ export function AudioConverter({
     const formatInfo = AUDIO_FORMATS[targetFormat];
     let estBytes = 0;
 
-    if (formatInfo.isLossless || targetFormat.endsWith("-ls")) {
+    if (formatInfo.category === "lossless" || targetFormat === "wav" || targetFormat === "wav-ls") {
       const bytesPerSample = (options.bitDepth || 16) / 8;
-      estBytes = Math.round(duration * options.sampleRate * options.channels * bytesPerSample);
-      if (targetFormat.includes("flac")) estBytes = Math.round(estBytes * 0.55);
+      estBytes = Math.round(duration * options.sampleRate * options.channels * bytesPerSample) + 44;
     } else {
-      const kbps = options.bitrate || 192;
-      estBytes = Math.round((duration * kbps * 1000) / 8);
+      estBytes = Math.round((duration * (options.bitrate * 1000)) / 8);
     }
 
     setExactProbedSize(estBytes);
@@ -104,6 +104,8 @@ export function AudioConverter({
   useEffect(() => {
     setConversionResult(null);
     setErrorMsg(null);
+    setConversionProgress(0);
+    setConversionStatusText("");
   }, [file, targetFormat, options]);
 
   const handleRemove = useCallback(() => {
@@ -112,6 +114,8 @@ export function AudioConverter({
     setMetadata(null);
     setConversionResult(null);
     setErrorMsg(null);
+    setConversionProgress(0);
+    setConversionStatusText("");
     if (onClearInitialFile) onClearInitialFile();
   }, [onClearInitialFile]);
 
@@ -119,13 +123,24 @@ export function AudioConverter({
     if (!audioBuffer || !file) return;
     setIsConverting(true);
     setErrorMsg(null);
+    setConversionProgress(10);
+    setConversionStatusText("Initializing audio DSP pipeline...");
 
     try {
-      const res = await convertAudio(audioBuffer, file.name, {
-        ...options,
-        format: targetFormat,
-      });
+      const res = await convertAudio(
+        audioBuffer,
+        file.name,
+        {
+          ...options,
+          format: targetFormat,
+        },
+        (progress, text) => {
+          setConversionProgress(progress);
+          setConversionStatusText(text);
+        }
+      );
       setConversionResult(res);
+      setConversionProgress(100);
       setIsConverting(false);
     } catch (err) {
       console.error("Conversion error:", err);
@@ -196,6 +211,8 @@ export function AudioConverter({
               sizeDiffPercent={sizeDiffPercent}
               isProbing={isProbing}
               isConverting={isConverting}
+              progress={conversionProgress}
+              progressText={conversionStatusText}
               resultUrl={conversionResult?.url || null}
               resultBlob={conversionResult?.blob || null}
               outputName={outputName}

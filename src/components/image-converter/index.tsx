@@ -43,6 +43,8 @@ export function ImageConverter({ initialFile, onClearInitialFile }: ImageConvert
   const [probedBlob, setProbedBlob] = useState<Blob | null>(null);
   const [isProbing, setIsProbing] = useState(false);
   const [state, setState] = useState<ConvertState>("idle");
+  const [conversionProgress, setConversionProgress] = useState(0);
+  const [conversionStatusText, setConversionStatusText] = useState("");
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [resultBlob, setResultBlob] = useState<Blob | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -76,6 +78,14 @@ export function ImageConverter({ initialFile, onClearInitialFile }: ImageConvert
       active = false;
     };
   }, [file]);
+
+  const handleFileSelect = useCallback((f: File) => {
+    setFile(f);
+    const detected = detectFormat(f);
+    setInputFormat(detected);
+    setTargetFormat(detected === "webp" ? "png" : "webp");
+    setSearchQuery("");
+  }, []);
 
   // Live exact size background probe (debounced 40ms)
   useEffect(() => {
@@ -118,16 +128,10 @@ export function ImageConverter({ initialFile, onClearInitialFile }: ImageConvert
     setResultUrl(null);
     setState("idle");
     setErrorMsg(null);
+    setConversionProgress(0);
+    setConversionStatusText("");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [file, targetFormat, options.quality, options.width, options.height, options.lockAspect]);
-
-  const handleFileSelect = useCallback((f: File) => {
-    setFile(f);
-    const detected = detectFormat(f);
-    setInputFormat(detected);
-    setTargetFormat(detected === "webp" ? "png" : "webp");
-    setSearchQuery("");
-  }, []);
 
   const handleRemove = useCallback(() => {
     setFile(null);
@@ -139,6 +143,9 @@ export function ImageConverter({ initialFile, onClearInitialFile }: ImageConvert
     setResultUrl(null);
     setResultBlob(null);
     setState("idle");
+    setErrorMsg(null);
+    setConversionProgress(0);
+    setConversionStatusText("");
     if (onClearInitialFile) onClearInitialFile();
   }, [resultUrl, onClearInitialFile]);
 
@@ -146,14 +153,20 @@ export function ImageConverter({ initialFile, onClearInitialFile }: ImageConvert
     if (!file) return;
     setState("converting");
     setErrorMsg(null);
+    setConversionProgress(25);
+    setConversionStatusText("Rendering canvas pixels...");
+
     try {
       let blob = probedBlob;
       if (!blob) {
+        setConversionProgress(60);
+        setConversionStatusText(`Encoding ${targetFormat.toUpperCase()} stream...`);
         blob = await convertImage(file, targetFormat, options);
       }
       const url = URL.createObjectURL(blob);
       setResultBlob(blob);
       setResultUrl(url);
+      setConversionProgress(100);
       setState("done");
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Conversion failed");
@@ -226,6 +239,8 @@ export function ImageConverter({ initialFile, onClearInitialFile }: ImageConvert
               sizeDiffPercent={sizeDiffPercent}
               isProbing={isProbing}
               isConverting={state === "converting"}
+              progress={conversionProgress}
+              progressText={conversionStatusText}
               resultUrl={resultUrl}
               resultBlob={resultBlob}
               outputName={outputName}

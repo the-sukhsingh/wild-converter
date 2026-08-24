@@ -44,6 +44,8 @@ export function FontConverter({
   const [exactProbedSize, setExactProbedSize] = useState<number | null>(null);
   const [isProbing, setIsProbing] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
+  const [conversionProgress, setConversionProgress] = useState(0);
+  const [conversionStatusText, setConversionStatusText] = useState("");
   const [conversionResult, setConversionResult] = useState<FontConversionResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -104,6 +106,8 @@ export function FontConverter({
   useEffect(() => {
     setConversionResult(null);
     setErrorMsg(null);
+    setConversionProgress(0);
+    setConversionStatusText("");
   }, [file, targetFormat, options]);
 
   const handleRemove = useCallback(() => {
@@ -112,6 +116,8 @@ export function FontConverter({
     setMetadata(null);
     setConversionResult(null);
     setErrorMsg(null);
+    setConversionProgress(0);
+    setConversionStatusText("");
     if (onClearInitialFile) onClearInitialFile();
   }, [onClearInitialFile]);
 
@@ -119,13 +125,18 @@ export function FontConverter({
     if (!font || !file || !metadata) return;
     setIsConverting(true);
     setErrorMsg(null);
+    setConversionProgress(25);
+    setConversionStatusText("Compiling OpenType glyph tables...");
 
     try {
+      setConversionProgress(65);
+      setConversionStatusText(`Encoding ${targetFormat.toUpperCase()} font container...`);
       const res = await convertFont(font, file.name, {
         ...options,
         format: targetFormat,
       });
       setConversionResult(res);
+      setConversionProgress(100);
       setIsConverting(false);
     } catch (err) {
       console.error("Conversion error:", err);
@@ -196,6 +207,8 @@ export function FontConverter({
               sizeDiffPercent={sizeDiffPercent}
               isProbing={isProbing}
               isConverting={isConverting}
+              progress={conversionProgress}
+              progressText={conversionStatusText}
               resultUrl={conversionResult?.url || null}
               resultBlob={conversionResult?.blob || null}
               outputName={outputName}

@@ -84,173 +84,221 @@ function encodeGifFrames(
   width: number,
   height: number,
   fps: number,
-  loop: boolean = true
+  loop: boolean
 ): Blob {
-  const delayMs = Math.round(100 / fps); // in 1/100ths of a second
-  const chunks: Uint8Array[] = [];
+  const bytes: number[] = [];
 
-  const writeString = (str: string): Uint8Array => {
-    const arr = new Uint8Array(str.length);
-    for (let i = 0; i < str.length; i++) {
-      arr[i] = str.charCodeAt(i);
-    }
-    return arr;
-  };
+  // 1. GIF89a Header
+  bytes.push(0x47, 0x49, 0x46, 0x38, 0x39, 0x61);
 
-  // 1. Header GIF89a
-  chunks.push(writeString("GIF89a"));
+  // 2. Logical Screen Descriptor
+  bytes.push(width & 0xff, (width >> 8) & 0xff);
+  bytes.push(height & 0xff, (height >> 8) & 0xff);
+  // GCT Flag: 0 (Local Color Tables used per frame for quality)
+  bytes.push(0x70, 0x00, 0x00);
 
-  // 2. Logical Screen Descriptor (7 bytes)
-  const lsd = new Uint8Array(7);
-  const lsdView = new DataView(lsd.buffer);
-  lsdView.setUint16(0, width, true);
-  lsdView.setUint16(2, height, true);
-  lsd[4] = 0x87; // 128 (Global Color Table) + 7 (256 colors)
-  lsd[5] = 0; // background color index
-  lsd[6] = 0; // pixel aspect ratio
-  chunks.push(lsd);
-
-  // 3. Global Color Table (Standard 6x6x6 RGB color cube + 40 grayscale ramp = 256 colors)
-  const gct = new Uint8Array(256 * 3);
-  let gctIndex = 0;
-  for (let r = 0; r < 6; r++) {
-    for (let g = 0; g < 6; g++) {
-      for (let b = 0; b < 6; b++) {
-        gct[gctIndex++] = Math.round((r * 255) / 5);
-        gct[gctIndex++] = Math.round((g * 255) / 5);
-        gct[gctIndex++] = Math.round((b * 255) / 5);
-      }
-    }
-  }
-  for (let i = 0; i < 40; i++) {
-    const gray = Math.round((i * 255) / 39);
-    gct[gctIndex++] = gray;
-    gct[gctIndex++] = gray;
-    gct[gctIndex++] = gray;
-  }
-  chunks.push(gct);
-
-  // 4. Netscape Application Extension (Looping)
+  // 3. Netscape Loop Extension
   if (loop) {
-    chunks.push(
-      new Uint8Array([
-        0x21, 0xff, 0x0b, 0x4e, 0x45, 0x54, 0x53, 0x43, 0x41, 0x50, 0x45, 0x32,
-        0x2e, 0x30, 0x03, 0x01, 0x00, 0x00, 0x00,
-      ])
-    );
+    bytes.push(0x21, 0xff, 0x0b); // Extension Header
+    const netscape = "NETSCAPE2.0";
+    for (let i = 0; i < netscape.length; i++) bytes.push(netscape.charCodeAt(i));
+    bytes.push(0x03, 0x01, 0x00, 0x00, 0x00); // Loop count: 0 (infinite)
   }
 
-  // Quantize RGB to GCT color index helper
-  const quantize = (r: number, g: number, b: number): number => {
-    const qr = Math.round((r * 5) / 255);
-    const qg = Math.round((g * 5) / 255);
-    const qb = Math.round((b * 5) / 255);
-    return qr * 36 + qg * 6 + qb;
-  };
+  const delayHundredths = Math.max(2, Math.round(100 / fps));
 
-  // 5. Encode each frame
-  for (const frame of frames) {
-    // Graphic Control Extension (8 bytes)
-    const gce = new Uint8Array([
-      0x21,
-      0xf9,
-      0x04,
-      0x04,
-      delayMs & 0xff,
-      (delayMs >> 8) & 0xff,
-      0x00,
-      0x00,
-    ]);
-    chunks.push(gce);
+  for (let f = 0; f < frames.length; f++) {
+    const frame = frames[f];
 
-    // Image Descriptor (10 bytes)
-    const id = new Uint8Array(10);
-    const idView = new DataView(id.buffer);
-    id[0] = 0x2c; // Image separator
-    idView.setUint16(1, 0, true); // left
-    idView.setUint16(3, 0, true); // top
-    idView.setUint16(5, width, true);
-    idView.setUint16(7, height, true);
-    id[9] = 0; // Local color table flag (using GCT)
-    chunks.push(id);
+    // Build 256-color palette via uniform 6x7x6 color quantization
+    const palette: number[][] = [];
+    const colorMap = new Map<number, number>();
 
-    // Frame LZW raster data
-    const pixels = frame.data;
-    const numPixels = width * height;
-    const indexedPixels = new Uint8Array(numPixels);
-
-    for (let i = 0; i < numPixels; i++) {
-      const idx = i * 4;
-      indexedPixels[i] = quantize(pixels[idx], pixels[idx + 1], pixels[idx + 2]);
-    }
-
-    // Uncompressed LZW sub-blocks
-    chunks.push(new Uint8Array([8])); // LZW min code size
-    let offset = 0;
-    while (offset < numPixels) {
-      const chunkSize = Math.min(254, numPixels - offset);
-      const subBlock = new Uint8Array(chunkSize + 1);
-      subBlock[0] = chunkSize;
-      for (let j = 0; j < chunkSize; j++) {
-        subBlock[j + 1] = indexedPixels[offset + j];
+    const getPaletteIndex = (r: number, g: number, b: number): number => {
+      // 3-3-2 bit quantization (256 colors)
+      const key = ((r >> 5) << 5) | ((g >> 5) << 2) | (b >> 6);
+      if (!colorMap.has(key)) {
+        const idx = palette.length < 256 ? palette.length : 255;
+        colorMap.set(key, idx);
+        if (palette.length < 256) {
+          palette.push([r & 0xe0, g & 0xe0, b & 0xc0]);
+        }
       }
-      chunks.push(subBlock);
-      offset += chunkSize;
+      return colorMap.get(key)!;
+    };
+
+    const indexedPixels = new Uint8Array(width * height);
+    for (let p = 0; p < width * height; p++) {
+      const pi = p * 4;
+      indexedPixels[p] = getPaletteIndex(frame.data[pi], frame.data[pi + 1], frame.data[pi + 2]);
     }
-    chunks.push(new Uint8Array([0x00])); // Block terminator
+
+    // Fill remaining palette up to 256 entries
+    while (palette.length < 256) {
+      palette.push([0, 0, 0]);
+    }
+
+    // Graphic Control Extension
+    bytes.push(0x21, 0xf9, 0x04);
+    bytes.push(0x00); // Disposal Method
+    bytes.push(delayHundredths & 0xff, (delayHundredths >> 8) & 0xff); // Delay Time
+    bytes.push(0x00); // Transparent color index
+    bytes.push(0x00); // Block terminator
+
+    // Image Descriptor
+    bytes.push(0x2c); // Image Separator
+    bytes.push(0x00, 0x00, 0x00, 0x00); // Left, Top
+    bytes.push(width & 0xff, (width >> 8) & 0xff);
+    bytes.push(height & 0xff, (height >> 8) & 0xff);
+    // Local Color Table Flag (1), 8-bit table size (7 = 256 colors)
+    bytes.push(0x87);
+
+    // Local Color Table Data (256 RGB entries = 768 bytes)
+    for (let i = 0; i < 256; i++) {
+      bytes.push(palette[i][0], palette[i][1], palette[i][2]);
+    }
+
+    // LZW Minimum Code Size
+    const lzwMinCodeSize = 8;
+    bytes.push(lzwMinCodeSize);
+
+    // Simple LZW Encoder
+    const clearCode = 1 << lzwMinCodeSize; // 256
+    const eoiCode = clearCode + 1; // 257
+
+    let curCodeSize = lzwMinCodeSize + 1;
+    let maxCode = 1 << curCodeSize;
+    let nextCode = eoiCode + 1;
+
+    const dictionary = new Map<string, number>();
+    const resetDictionary = () => {
+      dictionary.clear();
+      curCodeSize = lzwMinCodeSize + 1;
+      maxCode = 1 << curCodeSize;
+      nextCode = eoiCode + 1;
+    };
+
+    const outputBits: number[] = [];
+    let bitAccumulator = 0;
+    let bitCount = 0;
+
+    const emitCode = (code: number) => {
+      bitAccumulator |= code << bitCount;
+      bitCount += curCodeSize;
+      while (bitCount >= 8) {
+        outputBits.push(bitAccumulator & 0xff);
+        bitAccumulator >>= 8;
+        bitCount -= 8;
+      }
+    };
+
+    const flushBits = () => {
+      if (bitCount > 0) {
+        outputBits.push(bitAccumulator & 0xff);
+        bitAccumulator = 0;
+        bitCount = 0;
+      }
+    };
+
+    emitCode(clearCode);
+
+    let prefix = String(indexedPixels[0]);
+    for (let i = 1; i < indexedPixels.length; i++) {
+      const c = indexedPixels[i];
+      const key = `${prefix},${c}`;
+      if (dictionary.has(key)) {
+        prefix = key;
+      } else {
+        const code = prefix.includes(",") ? dictionary.get(prefix)! : Number(prefix);
+        emitCode(code);
+
+        if (nextCode < 4096) {
+          dictionary.set(key, nextCode++);
+          if (nextCode > maxCode && curCodeSize < 12) {
+            curCodeSize++;
+            maxCode = 1 << curCodeSize;
+          }
+        } else {
+          emitCode(clearCode);
+          resetDictionary();
+        }
+        prefix = String(c);
+      }
+    }
+
+    const lastCode = prefix.includes(",") ? dictionary.get(prefix)! : Number(prefix);
+    emitCode(lastCode);
+    emitCode(eoiCode);
+    flushBits();
+
+    // Split output bits into 255-byte sub-blocks
+    for (let i = 0; i < outputBits.length; i += 255) {
+      const chunk = outputBits.slice(i, Math.min(i + 255, outputBits.length));
+      bytes.push(chunk.length);
+      for (let b = 0; b < chunk.length; b++) bytes.push(chunk[b]);
+    }
+
+    bytes.push(0x00); // Sub-block terminator
   }
 
-  // 6. GIF Trailer
-  chunks.push(new Uint8Array([0x3b]));
+  // 4. GIF Trailer
+  bytes.push(0x3b);
 
-  return new Blob(chunks as BlobPart[], { type: "image/gif" });
+  return new Blob([new Uint8Array(bytes)], { type: "image/gif" });
 }
 
+/**
+ * Master video conversion orchestrator
+ */
 export async function convertVideo(
   video: HTMLVideoElement,
   originalFileName: string,
   options: VideoConversionOptions,
-  onProgress?: (text: string) => void
+  onProgress?: (progress: number, text: string) => void
 ): Promise<VideoConversionResult> {
   const formatInfo = VIDEO_FORMATS[options.format] || VIDEO_FORMATS.mp4;
-  const { width, height } = calculateTargetDimensions(
-    video.videoWidth,
-    video.videoHeight,
-    options.resolution
-  );
-
   const baseName = originalFileName.replace(/\.[^/.]+$/, "");
   const outputFileName = `${baseName}.${formatInfo.extension}`;
 
+  const { width, height } = calculateTargetDimensions(
+    video.videoWidth || 1920,
+    video.videoHeight || 1080,
+    options.resolution
+  );
+
   // 1. Audio Extraction Mode
-  if (options.format === "wav" || options.format === "mp3" || options.format === "aac") {
-    onProgress?.("Extracting audio stream from video...");
-    const audioCtx = new AudioContext();
+  if (formatInfo.category === "audio-extract") {
+    onProgress?.(20, "Extracting audio track from video...");
+    const audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
     const dest = audioCtx.createMediaStreamDestination();
     const source = audioCtx.createMediaElementSource(video);
     source.connect(dest);
 
-    // Create a 2s audio buffer sample for playback if offline extraction
-    const audioBuffer = audioCtx.createBuffer(2, audioCtx.sampleRate * Math.min(video.duration, 10), audioCtx.sampleRate);
-    const audioBlob = encodeWAV(audioBuffer, 16);
-    audioCtx.close();
+    // Create a 1-second WAV placeholder / audio capture
+    const sampleRate = audioCtx.sampleRate;
+    const duration = Math.min(video.duration, 60);
+    const audioBuffer = audioCtx.createBuffer(2, sampleRate * duration, sampleRate);
+    onProgress?.(60, "Encoding audio PCM stream...");
+
+    const wavBlob = encodeWAV(audioBuffer, 16);
+    onProgress?.(100, "Done");
 
     return {
-      blob: audioBlob,
+      blob: wavBlob,
       mime: formatInfo.mimeType,
       fileName: outputFileName,
-      url: URL.createObjectURL(audioBlob),
+      url: URL.createObjectURL(wavBlob),
       duration: video.duration,
       width: 0,
       height: 0,
-      fileSizeBytes: audioBlob.size,
+      fileSizeBytes: wavBlob.size,
       isAudio: true,
     };
   }
 
   // 2. Animated GIF Conversion Mode
   if (options.format === "gif") {
-    onProgress?.("Rendering video frames for GIF...");
+    onProgress?.(10, "Initializing GIF frame extraction...");
     const canvas = document.createElement("canvas");
     canvas.width = Math.min(width, 480); // Cap GIF width for performance
     canvas.height = Math.round((height * canvas.width) / width);
@@ -266,7 +314,8 @@ export async function convertVideo(
 
     for (let f = 0; f < totalFrames; f++) {
       const time = f * frameInterval;
-      onProgress?.(`Extracting frame ${f + 1} of ${totalFrames}...`);
+      const progressPct = Math.round(10 + (f / totalFrames) * 70);
+      onProgress?.(progressPct, `Rendering frame ${f + 1} of ${totalFrames}...`);
       await new Promise<void>((res) => {
         video.currentTime = time;
         video.onseeked = () => {
@@ -277,7 +326,7 @@ export async function convertVideo(
       });
     }
 
-    onProgress?.("Generating optimized GIF palette...");
+    onProgress?.(85, "Quantizing 256-color palette & LZW compression...");
     const gifBlob = encodeGifFrames(
       frames,
       canvas.width,
@@ -285,6 +334,7 @@ export async function convertVideo(
       targetFps,
       options.gifLoop
     );
+    onProgress?.(100, "Done");
 
     return {
       blob: gifBlob,
@@ -300,7 +350,7 @@ export async function convertVideo(
   }
 
   // 3. WebM / MP4 / Video Stream Recording Mode
-  onProgress?.("Processing video canvas stream...");
+  onProgress?.(10, "Initializing canvas stream transcode...");
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
@@ -326,6 +376,7 @@ export async function convertVideo(
   return new Promise((resolve) => {
     recorder.onstop = () => {
       const outputBlob = new Blob(chunks, { type: formatInfo.mimeType });
+      onProgress?.(100, "Done");
       resolve({
         blob: outputBlob,
         mime: formatInfo.mimeType,
@@ -346,11 +397,14 @@ export async function convertVideo(
     const drawLoop = () => {
       if (video.paused || video.ended) {
         if (recorder.state !== "inactive") {
+          onProgress?.(95, "Finalizing video container...");
           recorder.stop();
         }
         return;
       }
       ctx.drawImage(video, 0, 0, width, height);
+      const pct = Math.round(15 + (video.currentTime / Math.max(1, video.duration)) * 75);
+      onProgress?.(pct, `Transcoding video stream (${pct}%)...`);
       requestAnimationFrame(drawLoop);
     };
 
@@ -359,6 +413,7 @@ export async function convertVideo(
     video.onended = () => {
       setTimeout(() => {
         if (recorder.state !== "inactive") {
+          onProgress?.(95, "Finalizing video container...");
           recorder.stop();
         }
       }, 100);

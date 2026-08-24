@@ -211,7 +211,8 @@ export async function parseArchiveFile(file: File): Promise<ArchiveMetadata> {
 export async function convertArchive(
   meta: ArchiveMetadata,
   originalFileName: string,
-  options: ArchiveConversionOptions
+  options: ArchiveConversionOptions,
+  onProgress?: (progress: number, text: string) => void
 ): Promise<ArchiveConversionResult> {
   const formatInfo = ARCHIVE_FORMATS[options.format] || ARCHIVE_FORMATS.zip;
   const baseName = originalFileName
@@ -219,25 +220,32 @@ export async function convertArchive(
     .replace(/\.[^/.]+$/, "");
   const outputFileName = `${baseName}.${formatInfo.extension}`;
 
+  onProgress?.(20, `Packing ${meta.totalFiles} entries into ${formatInfo.label.split(" ")[0]}...`);
   let finalBytes: Uint8Array;
   const fmt = options.format;
 
   if (fmt === "tar" || fmt === "tar-ls") {
+    onProgress?.(50, "Generating POSIX ustar blocks...");
     finalBytes = encodeTAR(meta.rawFiles);
   } else if (fmt === "tgz" || fmt === "gz" || fmt === "gz-ls") {
+    onProgress?.(40, "Creating TAR stream...");
     const tarBytes = encodeTAR(meta.rawFiles);
+    onProgress?.(70, "Compressing stream with Deflate GZIP...");
     finalBytes = gzipSync(tarBytes, {
       level: options.compressionLevel as 0 | 1 | 6 | 9,
     });
   } else {
     // ZIP, 7Z, JAR, APK, DEB, RPM, ISO container repackaging
+    onProgress?.(60, `Compressing files at level ${options.compressionLevel}...`);
     finalBytes = zipSync(meta.rawFiles, {
       level: options.compressionLevel as 0 | 1 | 6 | 9,
     });
   }
 
+  onProgress?.(95, "Creating binary archive payload...");
   const blob = new Blob([finalBytes as BlobPart], { type: formatInfo.mimeType });
   const url = URL.createObjectURL(blob);
+  onProgress?.(100, "Done");
 
   return {
     blob,

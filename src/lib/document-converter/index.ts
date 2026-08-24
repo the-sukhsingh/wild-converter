@@ -17,7 +17,7 @@ import { generatePresentation } from "./generators/presentation-generator";
 import { generateText } from "./generators/text-generator";
 
 export * from "./types";
-export { parseDocument } from "./parsers";
+export { parseDocument, parseDocument as probeDocument } from "./parsers";
 
 /**
  * Universal client-side document conversion pipeline
@@ -25,16 +25,19 @@ export { parseDocument } from "./parsers";
 export async function convertDocument(
   file: File,
   targetFormat: DocumentFormat,
-  options: DocumentConversionOptions = {}
+  options: DocumentConversionOptions = {},
+  onProgress?: (progress: number, text: string) => void
 ): Promise<DocumentConversionResult> {
   const meta = DOCUMENT_FORMAT_META[targetFormat];
   if (!meta) {
     throw new Error(`Unsupported document format: ${targetFormat}`);
   }
 
+  onProgress?.(15, `Parsing ${file.name} structure...`);
   // 1. Parse input file into Document Intermediate Representation (IR)
   const docIR: DocumentIR = await parseDocument(file, targetFormat);
 
+  onProgress?.(50, `Compiling document into ${meta.label.split(" ")[0]}...`);
   // 2. Generate target format output blob
   let blob: Blob;
 
@@ -67,43 +70,33 @@ export async function convertDocument(
       );
       break;
 
-    case "md":
-    case "markdown":
     case "html":
     case "htm":
+    case "md":
+    case "markdown":
     case "tex":
     case "rst":
     case "org":
-    case "rtf":
-    case "odt":
       blob = await generateMarkup(docIR, targetFormat, options);
       break;
 
     case "txt":
+    case "rtf":
     default:
       blob = generateText(docIR, options);
       break;
   }
 
+  onProgress?.(90, "Finalizing document payload...");
   const fileName = buildDocumentOutputName(file.name, targetFormat);
-
-  // Build snippet previews
-  const textPreview = docIR.rawText.slice(0, 1500);
-  const htmlPreview = docIR.html.slice(0, 4000);
+  onProgress?.(100, "Done");
 
   return {
     blob,
     mime: meta.mime,
     fileName,
-    textPreview,
-    htmlPreview,
+    textPreview: docIR.rawText.slice(0, 500),
+    htmlPreview: docIR.html.slice(0, 1000),
     metadata: docIR.metadata,
   };
-}
-
-/**
- * Fast document probe to extract document statistics and outline
- */
-export async function probeDocument(file: File): Promise<DocumentIR> {
-  return parseDocument(file, null);
 }

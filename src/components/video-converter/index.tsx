@@ -46,6 +46,8 @@ export function VideoConverter({
   const [exactProbedSize, setExactProbedSize] = useState<number | null>(null);
   const [isProbing, setIsProbing] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
+  const [conversionProgress, setConversionProgress] = useState(0);
+  const [conversionStatusText, setConversionStatusText] = useState("");
   const [conversionResult, setConversionResult] = useState<VideoConversionResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -112,6 +114,8 @@ export function VideoConverter({
   useEffect(() => {
     setConversionResult(null);
     setErrorMsg(null);
+    setConversionProgress(0);
+    setConversionStatusText("");
   }, [file, targetFormat, options]);
 
   const handleRemove = useCallback(() => {
@@ -120,6 +124,8 @@ export function VideoConverter({
     setMetadata(null);
     setConversionResult(null);
     setErrorMsg(null);
+    setConversionProgress(0);
+    setConversionStatusText("");
     if (onClearInitialFile) onClearInitialFile();
   }, [onClearInitialFile]);
 
@@ -127,13 +133,24 @@ export function VideoConverter({
     if (!videoElement || !file) return;
     setIsConverting(true);
     setErrorMsg(null);
+    setConversionProgress(5);
+    setConversionStatusText("Starting video transcode pipeline...");
 
     try {
-      const res = await convertVideo(videoElement, file.name, {
-        ...options,
-        format: targetFormat,
-      });
+      const res = await convertVideo(
+        videoElement,
+        file.name,
+        {
+          ...options,
+          format: targetFormat,
+        },
+        (progress, text) => {
+          setConversionProgress(progress);
+          setConversionStatusText(text);
+        }
+      );
       setConversionResult(res);
+      setConversionProgress(100);
       setIsConverting(false);
     } catch (err) {
       console.error("Conversion error:", err);
@@ -204,6 +221,8 @@ export function VideoConverter({
               sizeDiffPercent={sizeDiffPercent}
               isProbing={isProbing}
               isConverting={isConverting}
+              progress={conversionProgress}
+              progressText={conversionStatusText}
               resultUrl={conversionResult?.url || null}
               resultBlob={conversionResult?.blob || null}
               outputName={outputName}

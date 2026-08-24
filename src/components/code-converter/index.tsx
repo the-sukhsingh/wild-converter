@@ -30,10 +30,10 @@ export function CodeConverter({
 }: CodeConverterProps = {}) {
   const [file, setFile] = useState<File | null>(initialFile || null);
   const [metadata, setMetadata] = useState<CodeMetadata | null>(null);
-  const [targetFormat, setTargetFormat] = useState<CodeFormat>("ts");
+  const [targetFormat, setTargetFormat] = useState<CodeFormat>("json");
   const [searchQuery, setSearchQuery] = useState("");
   const [options, setOptions] = useState<CodeConversionOptions>({
-    format: "ts",
+    format: "json",
     indentation: 2,
     minify: false,
     stripComments: false,
@@ -43,6 +43,8 @@ export function CodeConverter({
   const [exactProbedSize, setExactProbedSize] = useState<number | null>(null);
   const [isProbing, setIsProbing] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
+  const [conversionProgress, setConversionProgress] = useState(0);
+  const [conversionStatusText, setConversionStatusText] = useState("");
   const [conversionResult, setConversionResult] = useState<CodeConversionResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -61,9 +63,7 @@ export function CodeConverter({
       const meta = await parseCodeFile(f);
       setMetadata(meta);
 
-      const ext = f.name.split(".").pop()?.toLowerCase() || "";
-      const defaultFmt: CodeFormat =
-        ext === "js" ? "ts" : ext === "json" ? "yaml" : ext === "md" ? "html" : "ts";
+      const defaultFmt: CodeFormat = meta.format === "json" ? "yaml" : "json";
       setTargetFormat(defaultFmt);
       setOptions((prev) => ({
         ...prev,
@@ -71,11 +71,7 @@ export function CodeConverter({
       }));
     } catch (err) {
       console.error("Code parse error:", err);
-      setErrorMsg(
-        err instanceof Error
-          ? err.message
-          : "Failed to read source code text. Binary or unsupported encoding detected."
-      );
+      setErrorMsg(err instanceof Error ? err.message : "Failed to parse code / text file");
     }
   }, []);
 
@@ -85,15 +81,15 @@ export function CodeConverter({
       setExactProbedSize(null);
       return;
     }
-    const rawLen = metadata.charCount;
-    let estBytes = rawLen;
+    const chars = metadata.charCount;
+    let estBytes = 0;
 
     if (options.minify) {
-      estBytes = Math.round(rawLen * 0.65);
-    } else if (options.stripComments) {
-      estBytes = Math.round(rawLen * 0.85);
-    } else if (options.addLineNumbers) {
-      estBytes = Math.round(rawLen + metadata.lineCount * 6);
+      estBytes = Math.round(chars * 0.65);
+    } else if (targetFormat === "html" && metadata.format !== "html") {
+      estBytes = Math.round(chars * 1.6 + 512);
+    } else {
+      estBytes = chars;
     }
 
     setExactProbedSize(estBytes);
@@ -103,6 +99,8 @@ export function CodeConverter({
   useEffect(() => {
     setConversionResult(null);
     setErrorMsg(null);
+    setConversionProgress(0);
+    setConversionStatusText("");
   }, [file, targetFormat, options]);
 
   const handleRemove = useCallback(() => {
@@ -110,32 +108,39 @@ export function CodeConverter({
     setMetadata(null);
     setConversionResult(null);
     setErrorMsg(null);
+    setConversionProgress(0);
+    setConversionStatusText("");
     if (onClearInitialFile) onClearInitialFile();
   }, [onClearInitialFile]);
 
   const handleConvert = useCallback(async () => {
-    if (!metadata || !file) return;
+    if (!file || !metadata) return;
     setIsConverting(true);
     setErrorMsg(null);
+    setConversionProgress(20);
+    setConversionStatusText("Tokenizing AST & symbols...");
 
     try {
+      setConversionProgress(70);
+      setConversionStatusText(`Formatting syntax for ${targetFormat.toUpperCase()}...`);
       const res = await convertCode(metadata, file.name, {
         ...options,
         format: targetFormat,
       });
       setConversionResult(res);
+      setConversionProgress(100);
       setIsConverting(false);
     } catch (err) {
       console.error("Conversion error:", err);
       setErrorMsg(err instanceof Error ? err.message : "Code conversion failed");
       setIsConverting(false);
     }
-  }, [metadata, file, targetFormat, options]);
+  }, [file, metadata, targetFormat, options]);
 
   const hasFile = !!file;
   const targetMeta = CODE_FORMATS[targetFormat];
   const outputName = file
-    ? `${file.name.replace(/\.[^/.]+$/, "")}.${targetMeta?.extension || "ts"}`
+    ? `${file.name.replace(/\.[^/.]+$/, "")}.${targetMeta?.extension || "txt"}`
     : "";
 
   const sizeDiffPercent = useMemo(() => {
@@ -194,6 +199,8 @@ export function CodeConverter({
               sizeDiffPercent={sizeDiffPercent}
               isProbing={isProbing}
               isConverting={isConverting}
+              progress={conversionProgress}
+              progressText={conversionStatusText}
               resultUrl={conversionResult?.url || null}
               resultBlob={conversionResult?.blob || null}
               outputName={outputName}

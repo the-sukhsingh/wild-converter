@@ -50,10 +50,12 @@ export async function parseAudioFile(
 export async function convertAudio(
   source: AudioBuffer,
   originalFileName: string,
-  options: AudioConversionOptions
+  options: AudioConversionOptions,
+  onProgress?: (progress: number, text: string) => void
 ): Promise<AudioConversionResult> {
   const formatInfo = AUDIO_FORMATS[options.format] || AUDIO_FORMATS.mp3;
 
+  onProgress?.(15, "Applying DSP chain & sample rate conversion...");
   // 1. Apply DSP chain (Resampling, Channels, Trimming, Peak Normalization)
   const processedBuffer = await processAudio({
     sourceBuffer: source,
@@ -64,6 +66,7 @@ export async function convertAudio(
     trimEnd: options.trimEnd,
   });
 
+  onProgress?.(55, `Encoding ${formatInfo.label.split(" ")[0]} audio stream...`);
   // 2. Encode to target format container
   let blob: Blob;
 
@@ -95,10 +98,12 @@ export async function convertAudio(
     );
   }
 
+  onProgress?.(90, "Finalizing audio container...");
   // 3. Prepare result metadata and downloadable URL
   const baseName = originalFileName.replace(/\.[^/.]+$/, "");
   const outputFileName = `${baseName}.${formatInfo.extension}`;
   const url = URL.createObjectURL(blob);
+  onProgress?.(100, "Done");
 
   return {
     blob,
