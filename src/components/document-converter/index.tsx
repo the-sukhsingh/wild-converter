@@ -1,0 +1,270 @@
+"use client";
+
+import { useState, useCallback, useEffect, useMemo } from "react";
+import {
+  type DocumentFormat,
+  detectDocumentFormat,
+  buildDocumentOutputName,
+  estimateDocumentOutputSize,
+} from "@/lib/document-format-utils";
+import {
+  convertDocument,
+  probeDocument,
+  type DocumentConversionOptions,
+  type DocumentIR,
+  type DocumentConversionResult,
+} from "@/lib/document-converter";
+import { DocumentDropzone } from "./document-dropzone";
+import { DocumentHeader } from "./document-header";
+import { DocumentFormatSelector } from "./document-format-selector";
+import { DocumentOptionsPanel } from "./document-options";
+import { DocumentActionBar } from "./document-action-bar";
+import { DocumentPreviewModal } from "./document-preview-modal";
+
+interface DocumentConverterProps {
+  initialFile?: File | null;
+  onClearInitialFile?: () => void;
+}
+
+export function DocumentConverter({
+  initialFile,
+  onClearInitialFile,
+}: DocumentConverterProps = {}) {
+  const [file, setFile] = useState<File | null>(initialFile || null);
+  const [inputFormat, setInputFormat] = useState<DocumentFormat | null>(null);
+  const [targetFormat, setTargetFormat] = useState<DocumentFormat>("pdf");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [options, setOptions] = useState<DocumentConversionOptions>({
+    pdfPageSize: "a4",
+    pdfOrientation: "portrait",
+    pdfFontSize: 11,
+    pdfMargins: "normal",
+    pdfPageNumbers: true,
+    pdfHeaderTitle: true,
+    docxFontFamily: "sans",
+    docxStylePreset: "modern",
+    csvDelimiter: ",",
+    csvIncludeHeaders: true,
+    includeStyling: true,
+    latexClass: "article",
+  });
+
+  const [documentIR, setDocumentIR] = useState<DocumentIR | null>(null);
+  const [exactProbedSize, setExactProbedSize] = useState<number | null>(null);
+  const [probedResult, setProbedResult] = useState<DocumentConversionResult | null>(null);
+  const [isProbing, setIsProbing] = useState(false);
+  const [isConverting, setIsConverting] = useState(false);
+  const [conversionResult, setConversionResult] = useState<DocumentConversionResult | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+  // Sync initialFile if passed from parent
+  useEffect(() => {
+    if (initialFile && initialFile !== file) {
+      handleFileSelect(initialFile);
+    }
+  }, [initialFile]);
+
+  // Handle file select
+  const handleFileSelect = useCallback((f: File) => {
+    setFile(f);
+    const detected = detectDocumentFormat(f);
+    setInputFormat(detected);
+
+    if (detected === "pdf") {
+      setTargetFormat("docx");
+    } else if (detected === "xlsx" || detected === "xls" || detected === "ods") {
+      setTargetFormat("csv");
+    } else {
+      setTargetFormat("pdf");
+    }
+
+    setSearchQuery("");
+    setConversionResult(null);
+    setErrorMsg(null);
+  }, []);
+
+  // Parse document in background when file changes
+  useEffect(() => {
+    if (!file) {
+      setDocumentIR(null);
+      setExactProbedSize(null);
+      setProbedResult(null);
+      return;
+    }
+
+    let active = true;
+    setIsProbing(true);
+
+    probeDocument(file)
+      .then((ir) => {
+        if (active) {
+          setDocumentIR(ir);
+        }
+      })
+      .catch((err) => {
+        if (active) {
+          console.error("Probe error:", err);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [file]);
+
+  // Live exact size background probe (debounced 40ms)
+  useEffect(() => {
+    if (!file || !targetFormat) {
+      setExactProbedSize(null);
+      setProbedResult(null);
+      return;
+    }
+
+    const synEst = estimateDocumentOutputSize(file.size, targetFormat);
+    setExactProbedSize(synEst);
+
+    let active = true;
+    setIsProbing(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await convertDocument(file, targetFormat, options);
+        if (active) {
+          setExactProbedSize(res.blob.size);
+          setProbedResult(res);
+          setIsProbing(false);
+        }
+      } catch {
+        if (active) setIsProbing(false);
+      }
+    }, 40);
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [file, targetFormat, options]);
+
+  // Reset conversion state when parameters change
+  useEffect(() => {
+    setConversionResult(null);
+    setErrorMsg(null);
+  }, [file, targetFormat, options]);
+
+  const handleRemove = useCallback(() => {
+    setFile(null);
+    setInputFormat(null);
+    setDocumentIR(null);
+    setExactProbedSize(null);
+    setProbedResult(null);
+    setConversionResult(null);
+    setErrorMsg(null);
+    if (onClearInitialFile) onClearInitialFile();
+  }, [onClearInitialFile]);
+
+  const handleConvert = useCallback(async () => {
+    if (!file) return;
+    setIsConverting(true);
+    setErrorMsg(null);
+
+    try {
+      let result = probedResult;
+      if (!result) {
+        result = await convertDocument(file, targetFormat, options);
+      }
+      setConversionResult(result);
+      setIsConverting(false);
+    } catch (err) {
+      console.error("Conversion error:", err);
+      setErrorMsg(err instanceof Error ? err.message : "Document conversion failed");
+      setIsConverting(false);
+    }
+  }, [file, targetFormat, options, probedResult]);
+
+  const hasFile = !!file;
+  const outputName = file ? buildDocumentOutputName(file.name, targetFormat) : "";
+
+  const sizeDiffPercent = useMemo(() => {
+    if (!exactProbedSize || !file?.size) return null;
+    return Math.round(((exactProbedSize - file.size) / file.size) * 100);
+  }, [exactProbedSize, file?.size]);
+
+  return (
+    <div className="relative flex-1 w-full max-w-5xl mx-auto px-4 md:px-8 overflow-hidden">
+      {/* State 1: Upload / Dropzone */}
+      <div
+        className={`absolute inset-0 px-4 md:px-8 py-6 flex flex-col justify-center transition-opacity duration-200 ${
+          !hasFile ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+        aria-hidden={hasFile}
+      >
+        <DocumentDropzone onFileSelect={handleFileSelect} />
+      </div>
+
+      {/* State 2: Active Workspace */}
+      <div
+        className={`absolute inset-0 px-4 md:px-8 py-6 flex flex-col justify-between transition-opacity duration-200 ${
+          hasFile ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+        aria-hidden={!hasFile}
+      >
+        {file && (
+          <div className="h-full flex flex-col justify-between gap-4">
+            {/* Document Header */}
+            <DocumentHeader
+              file={file}
+              inputFormat={inputFormat}
+              metadata={documentIR?.metadata || null}
+              onRemove={handleRemove}
+              onPreview={() => setIsPreviewOpen(true)}
+            />
+
+            {/* Format Selector */}
+            <DocumentFormatSelector
+              selectedFormat={targetFormat}
+              inputFormat={inputFormat}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              onSelectFormat={(fmt) => {
+                setTargetFormat(fmt);
+                setSearchQuery("");
+              }}
+            />
+
+            {/* Options Panel */}
+            <DocumentOptionsPanel
+              targetFormat={targetFormat}
+              options={options}
+              onOptionsChange={setOptions}
+            />
+
+            {/* Action Bar */}
+            <DocumentActionBar
+              targetFormat={targetFormat}
+              exactProbedSize={exactProbedSize}
+              sizeDiffPercent={sizeDiffPercent}
+              isProbing={isProbing}
+              isConverting={isConverting}
+              actualOutputBlob={conversionResult?.blob || null}
+              outputName={outputName}
+              onConvert={handleConvert}
+            />
+
+            {errorMsg && (
+              <div className="text-xs font-mono text-destructive">
+                {errorMsg}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Document Preview Modal */}
+      <DocumentPreviewModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        documentIR={documentIR}
+      />
+    </div>
+  );
+}

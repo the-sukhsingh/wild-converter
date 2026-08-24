@@ -21,8 +21,13 @@ import { ActionBar } from "./action-bar";
 
 type ConvertState = "idle" | "converting" | "done" | "error";
 
-export function ImageConverter() {
-  const [file, setFile] = useState<File | null>(null);
+interface ImageConverterProps {
+  initialFile?: File | null;
+  onClearInitialFile?: () => void;
+}
+
+export function ImageConverter({ initialFile, onClearInitialFile }: ImageConverterProps = {}) {
+  const [file, setFile] = useState<File | null>(initialFile || null);
   const [inputFormat, setInputFormat] = useState<ImageFormat | null>(null);
   const [targetFormat, setTargetFormat] = useState<ImageFormat>("webp");
   const [searchQuery, setSearchQuery] = useState("");
@@ -41,6 +46,16 @@ export function ImageConverter() {
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [resultBlob, setResultBlob] = useState<Blob | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Sync initialFile
+  useEffect(() => {
+    if (initialFile && initialFile !== file) {
+      setFile(initialFile);
+      const detected = detectFormat(initialFile);
+      setInputFormat(detected);
+      setTargetFormat(detected === "webp" ? "png" : "webp");
+    }
+  }, [initialFile]);
 
   // Read dimensions when file changes
   useEffect(() => {
@@ -124,7 +139,8 @@ export function ImageConverter() {
     setResultUrl(null);
     setResultBlob(null);
     setState("idle");
-  }, [resultUrl]);
+    if (onClearInitialFile) onClearInitialFile();
+  }, [resultUrl, onClearInitialFile]);
 
   const handleConvert = useCallback(async () => {
     if (!file) return;
@@ -174,7 +190,7 @@ export function ImageConverter() {
         id="main-content"
       >
         {file && (
-          <div className="h-full flex flex-col justify-between gap-4 overflow-hidden">
+          <div className="h-full flex flex-col justify-between gap-4">
             {/* File Info Header */}
             <FileHeader
               file={file}
