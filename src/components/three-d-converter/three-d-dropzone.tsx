@@ -40,7 +40,7 @@ export function ThreeDDropzone({ onFileSelect }: ThreeDDropzoneProps) {
           Convert 3D models
         </h1>
         <p className="text-sm md:text-base text-[var(--muted-foreground)] mt-2 max-w-lg leading-relaxed">
-          Client-side WebGL 3D geometry engine. Transcode STL, Wavefront OBJ, GLTF, binary GLB, and 3MF models privately.
+          Client-side converter. No file uploads, no tracking, 100% private.
         </p>
       </div>
 

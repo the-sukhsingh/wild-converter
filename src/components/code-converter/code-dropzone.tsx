@@ -40,7 +40,7 @@ export function CodeDropzone({ onFileSelect }: CodeDropzoneProps) {
           Convert code & markup
         </h1>
         <p className="text-sm md:text-base text-[var(--muted-foreground)] mt-2 max-w-lg leading-relaxed">
-          Client-side AST tokenizer & transpiler engine. Beautify, minify, format indentation, and cross-convert data formats privately.
+          Client-side converter. No file uploads, no tracking, 100% private.
         </p>
       </div>
 

@@ -40,7 +40,7 @@ export function AudioDropzone({ onFileSelect }: AudioDropzoneProps) {
           Convert audio
         </h1>
         <p className="text-sm md:text-base text-[var(--muted-foreground)] mt-2 max-w-lg leading-relaxed">
-          Client-side Web Audio DSP engine. Resample, adjust bitrates, and transcode audio with zero server uploads.
+          Client-side converter. No file uploads, no tracking, 100% private.
         </p>
       </div>
 

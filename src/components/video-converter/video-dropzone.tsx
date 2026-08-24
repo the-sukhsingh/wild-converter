@@ -40,7 +40,7 @@ export function VideoDropzone({ onFileSelect }: VideoDropzoneProps) {
           Convert video
         </h1>
         <p className="text-sm md:text-base text-[var(--muted-foreground)] mt-2 max-w-lg leading-relaxed">
-          Client-side Canvas & MediaStream transcoder. Create animated GIFs, extract audio, and rescale videos privately.
+          Client-side converter. No file uploads, no tracking, 100% private.
         </p>
       </div>
 

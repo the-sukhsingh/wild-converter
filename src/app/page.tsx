@@ -21,18 +21,6 @@ import { isFontFile } from "@/lib/font-format-utils";
 import { isArchiveFile } from "@/lib/archive-format-utils";
 import { isCodeFile } from "@/lib/code-format-utils";
 
-import {
-  ImageIcon,
-  FileText,
-  Music,
-  Film,
-  Compass,
-  Box,
-  Type,
-  Archive,
-  Code2,
-} from "lucide-react";
-
 export type ConverterCategory =
   | "images"
   | "documents"
@@ -47,20 +35,19 @@ export type ConverterCategory =
 interface CategoryTab {
   id: ConverterCategory;
   label: string;
-  icon: typeof ImageIcon;
   engineName: string;
 }
 
 const CATEGORIES: CategoryTab[] = [
-  { id: "images", label: "Images", icon: ImageIcon, engineName: "canvas & wasm image engine" },
-  { id: "documents", label: "Docs", icon: FileText, engineName: "pure client-side wasm document engine" },
-  { id: "audio", label: "Audio", icon: Music, engineName: "web audio dsp & pcm engine" },
-  { id: "video", label: "Video", icon: Film, engineName: "canvas & mediastream transcode engine" },
-  { id: "vector", label: "Vectors", icon: Compass, engineName: "svg dom & postscript vector compiler" },
-  { id: "3d", label: "3D Models", icon: Box, engineName: "webgl 3d geometry & buffer engine" },
-  { id: "fonts", label: "Fonts", icon: Type, engineName: "opentype & woff2 wasm engine" },
-  { id: "archive", label: "Archives", icon: Archive, engineName: "deflate/tar streaming compressor" },
-  { id: "code", label: "Code", icon: Code2, engineName: "ast tokenizer & syntax transpiler" },
+  { id: "images", label: "Images", engineName: "canvas & wasm image engine" },
+  { id: "documents", label: "Docs", engineName: "pure client-side wasm document engine" },
+  { id: "audio", label: "Audio", engineName: "web audio dsp & pcm engine" },
+  { id: "video", label: "Video", engineName: "canvas & mediastream transcode engine" },
+  { id: "vector", label: "Vectors", engineName: "svg dom & postscript vector compiler" },
+  { id: "3d", label: "3D", engineName: "webgl 3d geometry & buffer engine" },
+  { id: "fonts", label: "Fonts", engineName: "opentype & woff2 wasm engine" },
+  { id: "archive", label: "Archives", engineName: "deflate/tar streaming compressor" },
+  { id: "code", label: "Code", engineName: "ast tokenizer & syntax transpiler" },
 ];
 
 function detectCategoryFromFile(file: File): ConverterCategory {
@@ -138,55 +125,49 @@ export default function Home() {
         isDragOver ? "ring-2 ring-[var(--foreground)]/20" : ""
       }`}
     >
-      {/* ─── Header: Minimal Open-Design Navigation ───────────────── */}
-      <header className="shrink-0 border-b border-[var(--border)] bg-[var(--background)] z-50">
-        <div className="w-full max-w-5xl mx-auto px-4 md:px-8 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-2.5">
-          <div className="flex items-center justify-between w-full sm:w-auto">
-            <div className="flex items-baseline gap-1.5">
-              <span className="font-sans font-bold text-lg tracking-tight text-[var(--foreground)]">
-                wild
-              </span>
-              <span className="font-mono text-xs text-[var(--muted-foreground)]">
-                / converter
-              </span>
-            </div>
-
-            <div className="sm:hidden">
-              <ThemeToggle />
-            </div>
+      {/* ─── Header: Fixed Height Clean Open-Design Navigation ───────────────── */}
+      <header className="shrink-0 h-14 border-b border-[var(--border)] bg-[var(--background)] z-50">
+        <div className="w-full max-w-5xl h-full mx-auto px-4 md:px-8 flex items-center justify-between gap-4">
+          {/* Logo */}
+          <div className="flex items-baseline gap-1.5 shrink-0 select-none">
+            <span className="font-sans font-semibold text-base tracking-tight text-[var(--foreground)]">
+              wild
+            </span>
+            <span className="font-mono text-xs text-[var(--muted-foreground)]">
+              / converter
+            </span>
           </div>
 
-          {/* Category Tabs Switcher */}
-          <nav className="flex items-center bg-[var(--foreground)]/5 p-0.5 rounded text-xs font-mono overflow-x-auto max-w-full scrollbar-none">
+          {/* Clean Category Navigation Strip */}
+          <nav className="flex items-center gap-0.5 overflow-x-auto no-scrollbar py-1">
             {CATEGORIES.map((cat) => {
-              const Icon = cat.icon;
               const isActive = activeCategory === cat.id;
               return (
                 <button
                   key={cat.id}
                   type="button"
                   onClick={() => setActiveCategory(cat.id)}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded transition-colors whitespace-nowrap cursor-pointer ${
+                  className={`h-8 px-2.5 rounded-md text-xs font-mono font-medium transition-all whitespace-nowrap cursor-pointer ${
                     isActive
-                      ? "bg-[var(--foreground)] text-[var(--background)] font-medium"
-                      : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                      ? "bg-[var(--card)] text-[var(--foreground)] shadow-xs"
+                      : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]/40"
                   }`}
                 >
-                  <Icon className="w-3.5 h-3.5" />
-                  <span>{cat.label}</span>
+                  {cat.label}
                 </button>
               );
             })}
           </nav>
 
-          <div className="hidden sm:flex items-center gap-2">
+          {/* Right Action: Theme Toggle */}
+          <div className="shrink-0 flex items-center">
             <ThemeToggle />
           </div>
         </div>
       </header>
 
       {/* ─── Main Workspace ──────────────────────────────────────── */}
-      <main className="flex-1 flex flex-col overflow-hidden min-h-0">
+      <main className="flex-1 flex flex-col overflow-hidden min-h-0 relative">
         {activeCategory === "images" && (
           <ImageConverter
             initialFile={droppedFile}

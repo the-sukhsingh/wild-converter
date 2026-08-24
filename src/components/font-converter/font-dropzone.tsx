@@ -40,7 +40,7 @@ export function FontDropzone({ onFileSelect }: FontDropzoneProps) {
           Convert fonts
         </h1>
         <p className="text-sm md:text-base text-[var(--muted-foreground)] mt-2 max-w-lg leading-relaxed">
-          Client-side OpenType engine. Generate WOFF2, WOFF, TTF, EOT webfonts, and instant CSS @font-face rules privately.
+          Client-side converter. No file uploads, no tracking, 100% private.
         </p>
       </div>
 

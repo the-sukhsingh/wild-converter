@@ -40,7 +40,7 @@ export function ArchiveDropzone({ onFileSelect }: ArchiveDropzoneProps) {
           Convert archives
         </h1>
         <p className="text-sm md:text-base text-[var(--muted-foreground)] mt-2 max-w-lg leading-relaxed">
-          Client-side streaming decompression and archive repackager. Transcode ZIP, TAR, TGZ (tar.gz), 7Z, and GZ archives with zero server uploads.
+          Client-side converter. No file uploads, no tracking, 100% private.
         </p>
       </div>
 

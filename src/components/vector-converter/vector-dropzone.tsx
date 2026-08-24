@@ -40,7 +40,7 @@ export function VectorDropzone({ onFileSelect }: VectorDropzoneProps) {
           Convert vectors
         </h1>
         <p className="text-sm md:text-base text-[var(--muted-foreground)] mt-2 max-w-lg leading-relaxed">
-          Client-side SVG AST compiler and PostScript generator. Convert SVGs to EPS, AI, CAD DXF, and high-DPI rasters.
+          Client-side converter. No file uploads, no tracking, 100% private.
         </p>
       </div>
 
