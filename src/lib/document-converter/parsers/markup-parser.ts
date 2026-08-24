@@ -29,10 +29,26 @@ export async function parseMarkupDocument(
     case "html":
     case "htm": {
       html = text;
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(text, "text/html");
-      rawText = doc.body.textContent || text;
-      parseHtmlSections(doc.body, sections);
+      if (typeof DOMParser !== "undefined") {
+        try {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(text, "text/html");
+          if (doc && doc.body) {
+            rawText = doc.body.textContent || text;
+            parseHtmlSections(doc.body, sections);
+            break;
+          }
+        } catch {}
+      }
+
+      // Safe regex fallback for Node.js
+      rawText = text
+        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+        .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, "")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      parsePlaintextSections(rawText || text, sections);
       break;
     }
 
