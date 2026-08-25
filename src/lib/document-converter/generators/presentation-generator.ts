@@ -1,4 +1,3 @@
-import pptxgen from "pptxgenjs";
 import JSZip from "jszip";
 import type { DocumentIR, DocumentConversionOptions } from "../types";
 
@@ -39,7 +38,8 @@ export async function generatePresentation(
 
   // Use pptxgenjs for PPTX generation
   try {
-    const pres = new pptxgen();
+    const PptxGen = (await import("pptxgenjs")).default;
+    const pres = new PptxGen();
     pres.layout = "LAYOUT_16x9";
     pres.title = doc.title || "Presentation";
 

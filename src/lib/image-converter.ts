@@ -67,21 +67,31 @@ export async function convertImage(
   let srcH = 0;
   let drawSource: ImageBitmap | HTMLImageElement | null = null;
 
+  let sourceBlob: Blob = file;
+  const isHeic = file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif") || file.type.includes("heic") || file.type.includes("heif");
+  if (isHeic && typeof window !== "undefined") {
+    try {
+      const heic2any = (await import("heic2any")).default;
+      const converted = await heic2any({ blob: file, toType: "image/png" });
+      sourceBlob = Array.isArray(converted) ? converted[0] : converted;
+    } catch {}
+  }
+
   try {
     if (typeof createImageBitmap !== "undefined") {
-      const bitmap = await createImageBitmap(file);
+      const bitmap = await createImageBitmap(sourceBlob);
       srcW = bitmap.width;
       srcH = bitmap.height;
       drawSource = bitmap;
     } else {
-      const img = await loadImageElement(file);
+      const img = await loadImageElement(sourceBlob);
       srcW = img.naturalWidth || img.width || 800;
       srcH = img.naturalHeight || img.height || 600;
       drawSource = img;
     }
   } catch {
     try {
-      const img = await loadImageElement(file);
+      const img = await loadImageElement(sourceBlob);
       srcW = img.naturalWidth || img.width || 800;
       srcH = img.naturalHeight || img.height || 600;
       drawSource = img;
@@ -338,7 +348,7 @@ function fallbackToHtmlCanvas(
   });
 }
 
-function loadImageElement(file: File): Promise<HTMLImageElement> {
+function loadImageElement(file: File | Blob): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     if (typeof Image === "undefined" || typeof document === "undefined") {
       reject(new Error("Image element not available in headless environment"));

@@ -3,6 +3,8 @@ import TurndownService from "turndown";
 import * as YAML from "yaml";
 import Papa from "papaparse";
 import * as xml2js from "xml2js";
+import { XMLParser, XMLBuilder } from "fast-xml-parser";
+import * as TOML from "js-toml";
 import type {
   CodeConversionOptions,
   CodeConversionResult,
@@ -59,23 +61,22 @@ export function minifyCode(code: string, format: string): string {
   clean = clean
     .replace(/\r\n/g, "\n")
     .replace(/[ \t]+/g, " ")
-    .replace(/\s*([{};:=,+><\(\)\[\]])\s*/g, "$1")
-    .replace(/\n+/g, "\n")
-    .trim();
+    .replace(/^\s+$/gm, "")
+    .replace(/\n\s*\n+/g, "\n");
 
-  return clean;
+  return clean.trim();
 }
 
 /**
- * Beautifies / standardizes indentation across code languages
+ * Custom Indentation Formatter
  */
 export function formatCodeIndentation(
   code: string,
-  indentation: 2 | 4 | "tab"
+  indentation: 2 | 4 | "tab" | "original" = 2
 ): string {
-  const indentStr =
-    indentation === "tab" ? "\t" : " ".repeat(indentation);
+  if (indentation === "original") return code;
 
+  const indentStr = indentation === "tab" ? "\t" : " ".repeat(indentation);
   const lines = code.split("\n");
   let indentLevel = 0;
   const formattedLines: string[] = [];
@@ -93,9 +94,12 @@ export function formatCodeIndentation(
 
     formattedLines.push(indentStr.repeat(indentLevel) + line);
 
-    const openMatches = (line.match(/[{\[\(]/g) || []).length;
-    const closeMatches = (line.match(/[}\]\)]/g) || []).length;
-    indentLevel = Math.max(0, indentLevel + openMatches - closeMatches);
+    // Increase indent for next lines on opening brace/bracket
+    const opens = (line.match(/[{\[\(]/g) || []).length;
+    const closes = (line.match(/[}\]\)]/g) || []).length;
+    if (opens > closes) {
+      indentLevel += opens - closes;
+    }
   }
 
   return formattedLines.join("\n");
@@ -126,8 +130,8 @@ export async function parseCodeFile(file: File): Promise<CodeMetadata> {
 }
 
 /**
- * Master code & markup converter using standard packages:
- * yaml, papaparse, xml2js, marked, turndown
+ * Robust Client-Side Universal Code & Data Formatter / Transpiler using
+ * yaml, papaparse, fast-xml-parser, js-toml, marked, turndown
  */
 export async function convertCode(
   meta: CodeMetadata,
@@ -171,14 +175,34 @@ export async function convertCode(
         processedCode = Papa.unparse(parsed);
       }
     }
-    // XML <-> JSON
+    // XML <-> JSON using fast-xml-parser with fallback
     else if (srcExt === "xml" && targetExt === "json") {
-      const parsed = await xml2js.parseStringPromise(meta.rawCode);
-      processedCode = JSON.stringify(parsed, null, indentNum);
+      try {
+        const xmlParser = new XMLParser({ ignoreAttributes: false });
+        const parsed = xmlParser.parse(meta.rawCode);
+        processedCode = JSON.stringify(parsed, null, indentNum);
+      } catch {
+        const parsed = await xml2js.parseStringPromise(meta.rawCode);
+        processedCode = JSON.stringify(parsed, null, indentNum);
+      }
     } else if (srcExt === "json" && targetExt === "xml") {
+      try {
+        const parsed = JSON.parse(meta.rawCode);
+        const xmlBuilder = new XMLBuilder({ format: true, indentBy: " ".repeat(indentNum) });
+        processedCode = xmlBuilder.build(parsed);
+      } catch {
+        const parsed = JSON.parse(meta.rawCode);
+        const builder = new xml2js.Builder({ headless: false, renderOpts: { pretty: true, indent: " ".repeat(indentNum) } });
+        processedCode = builder.buildObject(parsed);
+      }
+    }
+    // TOML <-> JSON
+    else if (srcExt === "toml" && targetExt === "json") {
+      const parsed = TOML.load(meta.rawCode);
+      processedCode = JSON.stringify(parsed, null, indentNum);
+    } else if (srcExt === "json" && targetExt === "toml") {
       const parsed = JSON.parse(meta.rawCode);
-      const builder = new xml2js.Builder({ headless: false, renderOpts: { pretty: true, indent: " ".repeat(indentNum) } });
-      processedCode = builder.buildObject(parsed);
+      processedCode = TOML.dump(parsed);
     }
   } catch {
     // Keep rawCode on syntax parse errors
