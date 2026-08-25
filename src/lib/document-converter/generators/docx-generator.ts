@@ -10,6 +10,7 @@ import {
   BorderStyle,
   WidthType,
   ShadingType,
+  ImageRun,
 } from "docx";
 import type { DocumentIR, DocumentConversionOptions } from "../types";
 
@@ -271,6 +272,31 @@ export async function generateDocx(
             spacing: { before: 160, after: 160 },
           })
         );
+        break;
+      }
+
+      case "image": {
+        try {
+          if (section.src && section.src.startsWith("data:")) {
+            const base64Data = section.src.split(",")[1];
+            const buffer = typeof Buffer !== "undefined"
+              ? Buffer.from(base64Data, "base64")
+              : Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
+            const imageRun = new ImageRun({
+              data: buffer,
+              transformation: {
+                width: Math.min(section.width || 400, 500),
+                height: Math.min(section.height || 300, 400),
+              },
+              type: "png",
+            });
+            children.push(new Paragraph({ children: [imageRun], spacing: { after: 160 } }));
+          } else {
+            children.push(new Paragraph({ text: `[Image: ${section.alt || "Image"}]`, spacing: { after: 120 } }));
+          }
+        } catch {
+          children.push(new Paragraph({ text: `[Image: ${section.alt || "Image"}]`, spacing: { after: 120 } }));
+        }
         break;
       }
     }

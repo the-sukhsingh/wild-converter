@@ -103,6 +103,10 @@ function buildMarkdown(doc: DocumentIR): string {
         parts.push("---\n");
         break;
       }
+      case "image": {
+        parts.push(`![${section.alt || "image"}](${section.src})\n`);
+        break;
+      }
     }
   }
 
@@ -120,6 +124,9 @@ function buildHtml(doc: DocumentIR, options: DocumentConversionOptions): string 
 
   for (const section of doc.sections) {
     switch (section.type) {
+      case "image":
+        bodyContent.push(`<div style="text-align: center; margin: 1.5em 0;"><img src="${section.src}" alt="${escapeHtml(section.alt || "Image")}" style="max-width: 100%; height: auto;" /></div>`);
+        break;
       case "heading":
         bodyContent.push(`<h${section.level}>${escapeHtml(section.text)}</h${section.level}>`);
         break;

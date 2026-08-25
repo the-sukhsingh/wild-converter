@@ -12,9 +12,34 @@ export async function parseDocxDocument(file: File): Promise<DocumentIR> {
   const sheets: DocumentSheet[] = [];
 
   try {
-    // 1. Mammoth HTML & raw text extraction
+    // 1. Mammoth HTML & raw text extraction with embedded image support and rich style maps
     const [htmlResult, textResult] = await Promise.all([
-      mammoth.convertToHtml({ arrayBuffer }),
+      mammoth.convertToHtml(
+        { arrayBuffer },
+        {
+          convertImage: mammoth.images.imgElement((image) =>
+            image.read("base64").then((imageBuffer) => ({
+              src: "data:" + image.contentType + ";base64," + imageBuffer,
+            }))
+          ),
+          styleMap: [
+            "p[style-name='Heading 1'] => h1:fresh",
+            "p[style-name='Heading 2'] => h2:fresh",
+            "p[style-name='Heading 3'] => h3:fresh",
+            "p[style-name='Heading 4'] => h4:fresh",
+            "p[style-name='Heading 5'] => h5:fresh",
+            "p[style-name='Heading 6'] => h6:fresh",
+            "p[style-name='Title'] => h1.doc-title:fresh",
+            "p[style-name='Subtitle'] => p.doc-subtitle:fresh",
+            "r[style-name='Strong'] => strong",
+            "r[style-name='Emphasis'] => em",
+            "u => u",
+            "strike => del",
+            "table => table.docx-table",
+          ],
+          includeDefaultStyleMap: true,
+        }
+      ),
       mammoth.extractRawText({ arrayBuffer }),
     ]);
 
@@ -34,8 +59,24 @@ export async function parseDocxDocument(file: File): Promise<DocumentIR> {
           const level = parseInt(tag[1], 10) as 1 | 2 | 3 | 4 | 5 | 6;
           sections.push({ type: "heading", level, text: el.textContent?.trim() || "" });
         } else if (tag === "p") {
-          if (el.textContent?.trim()) {
+          const img = el.querySelector("img");
+          if (img && img.getAttribute("src")) {
+            sections.push({
+              type: "image",
+              src: img.getAttribute("src") || "",
+              alt: img.getAttribute("alt") || "Embedded Document Image",
+            });
+          } else if (el.textContent?.trim()) {
             sections.push({ type: "paragraph", text: el.textContent.trim(), html: el.innerHTML });
+          }
+        } else if (tag === "img") {
+          const src = el.getAttribute("src");
+          if (src) {
+            sections.push({
+              type: "image",
+              src,
+              alt: el.getAttribute("alt") || "Embedded Document Image",
+            });
           }
         } else if (tag === "ul" || tag === "ol") {
           const items: string[] = [];
@@ -99,6 +140,9 @@ export async function parseDocxDocument(file: File): Promise<DocumentIR> {
     sheets,
     rawText,
     html,
+    rawBuffer: arrayBuffer,
+    originalFile: file,
+    sourceFormat: "docx",
     metadata: {
       title,
       wordCount,

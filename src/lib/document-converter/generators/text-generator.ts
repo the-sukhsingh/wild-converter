@@ -86,6 +86,11 @@ export function generateText(
         parts.push("");
         break;
       }
+      case "image": {
+        parts.push(`[Image: ${section.alt || "Image"}]`);
+        parts.push("");
+        break;
+      }
     }
   }
 

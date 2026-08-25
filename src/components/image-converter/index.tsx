@@ -37,6 +37,9 @@ export function ImageConverter({ initialFile, onClearInitialFile }: ImageConvert
     width: 0,
     height: 0,
     lockAspect: true,
+    pdfPageSize: "a4",
+    pdfOrientation: "portrait",
+    pdfMargins: "normal",
   });
 
   const [imageDimensions, setImageDimensions] = useState<{ w: number; h: number } | null>(null);
@@ -132,7 +135,7 @@ export function ImageConverter({ initialFile, onClearInitialFile }: ImageConvert
     setConversionProgress(0);
     setConversionStatusText("");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [file, targetFormat, options.quality, options.width, options.height, options.lockAspect]);
+  }, [file, targetFormat, options.quality, options.width, options.height, options.lockAspect, options.pdfPageSize, options.pdfOrientation, options.pdfMargins]);
 
   const isCancelledRef = useRef(false);
 

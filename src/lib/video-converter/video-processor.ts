@@ -6,6 +6,7 @@ import type {
 } from "./types";
 import { VIDEO_FORMATS } from "../video-format-utils";
 import { encodeWAV } from "../audio-converter/wav-encoder";
+import { convertVideoWithFFmpeg } from "./ffmpeg-engine";
 
 export async function parseVideoFile(file: File): Promise<{
   videoElement: HTMLVideoElement;
@@ -248,21 +249,50 @@ function encodeGifFrames(
 }
 
 /**
- * Master video conversion orchestrator with cancellation support
+ * Master video conversion orchestrator with WebAssembly FFmpeg and cancellation support
  */
 export async function convertVideo(
-  video: HTMLVideoElement,
+  videoInput: HTMLVideoElement | File,
   originalFileName: string,
   options: VideoConversionOptions,
   onProgress?: (progress: number, text: string) => void,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  sourceFile?: File
 ): Promise<VideoConversionResult> {
+  const inputFile = sourceFile || (videoInput instanceof File ? videoInput : null);
+
+  // 1. Try real WebAssembly FFmpeg conversion first (100% private, genuine containers & codecs)
+  if (inputFile) {
+    try {
+      return await convertVideoWithFFmpeg(
+        inputFile,
+        options.format,
+        options,
+        onProgress,
+        signal
+      );
+    } catch (ffmpegErr) {
+      if (signal?.aborted) {
+        throw ffmpegErr;
+      }
+      console.warn("WebAssembly FFmpeg engine failed, falling back to browser canvas pipeline:", ffmpegErr);
+    }
+  }
+
   const formatInfo = VIDEO_FORMATS[options.format] || VIDEO_FORMATS.mp4;
   const baseName = originalFileName.replace(/\.[^/.]+$/, "");
   const outputFileName = `${baseName}.${formatInfo.extension}`;
 
   if (signal?.aborted) {
     throw new Error("Conversion cancelled by user");
+  }
+
+  let video: HTMLVideoElement;
+  if (videoInput instanceof HTMLVideoElement) {
+    video = videoInput;
+  } else {
+    const parsed = await parseVideoFile(videoInput);
+    video = parsed.videoElement;
   }
 
   const { width, height } = calculateTargetDimensions(

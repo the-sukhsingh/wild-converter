@@ -1,4 +1,5 @@
 export type ImageFormat =
+  | "pdf"
   | "jpeg"
   | "jpg"
   | "png"
@@ -41,6 +42,19 @@ export interface FormatMeta {
 }
 
 export const FORMAT_META: Record<ImageFormat, FormatMeta> = {
+  pdf: {
+    id: "pdf",
+    label: "PDF",
+    ext: "pdf",
+    mime: "application/pdf",
+    baseFormat: "pdf",
+    category: "popular",
+    lossy: false,
+    supportsQuality: false,
+    supportsAlpha: true,
+    canOutput: true,
+    description: "Adobe PDF document with high-resolution embedded image.",
+  },
   // Popular / Standard
   webp: {
     id: "webp",

@@ -160,7 +160,8 @@ export function VideoConverter({
           setConversionProgress(progress);
           setConversionStatusText(text);
         },
-        controller.signal
+        controller.signal,
+        file
       );
       setConversionResult(res);
       setConversionProgress(100);

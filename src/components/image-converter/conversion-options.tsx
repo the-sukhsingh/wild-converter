@@ -17,8 +17,84 @@ export function ConversionOptionsPanel({
   onOptionsChange,
 }: ConversionOptionsProps) {
   const targetMeta = FORMAT_META[targetFormat];
+  const isPdf = targetFormat === "pdf";
   const isLossless = targetFormat.endsWith("-ls") || !targetMeta?.supportsQuality;
   const q = options.quality ?? 0.85;
+
+  const pageSize = options.pdfPageSize || "a4";
+  const orientation = options.pdfOrientation || "portrait";
+  const margins = options.pdfMargins || "normal";
+
+  if (isPdf) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-3 border-y border-[var(--border)]">
+        {/* Column 1: Page Size & Orientation */}
+        <div className="flex flex-col gap-2">
+          <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+            <span>Page Size & Orientation</span>
+            <span className="font-semibold text-[var(--foreground)] uppercase">
+              {pageSize} · {orientation}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {(["a4", "letter", "legal"] as const).map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => onOptionsChange({ ...options, pdfPageSize: s })}
+                className={`h-7 px-2.5 rounded-md text-xs font-mono font-medium uppercase transition-all cursor-pointer ${
+                  pageSize === s
+                    ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs"
+                    : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+                }`}
+              >
+                {s}
+              </button>
+            ))}
+            <span className="text-xs text-[var(--muted-foreground)] mx-1">•</span>
+            {(["portrait", "landscape"] as const).map((o) => (
+              <button
+                key={o}
+                type="button"
+                onClick={() => onOptionsChange({ ...options, pdfOrientation: o })}
+                className={`h-7 px-2.5 rounded-md text-xs font-mono font-medium capitalize transition-all cursor-pointer ${
+                  orientation === o
+                    ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs"
+                    : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+                }`}
+              >
+                {o}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Column 2: Page Margins */}
+        <div className="flex flex-col gap-2">
+          <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+            <span>Page Margins</span>
+            <span className="font-semibold text-[var(--foreground)] capitalize">{margins}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {(["compact", "normal", "wide"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => onOptionsChange({ ...options, pdfMargins: m })}
+                className={`h-7 px-2.5 rounded-md text-xs font-mono font-medium capitalize transition-all cursor-pointer ${
+                  margins === m
+                    ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs"
+                    : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+                }`}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-3 border-y border-[var(--border)]">

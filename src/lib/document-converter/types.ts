@@ -46,6 +46,14 @@ export interface DocumentDividerSection {
   type: "divider";
 }
 
+export interface DocumentImageSection {
+  type: "image";
+  src: string;
+  width?: number;
+  height?: number;
+  alt?: string;
+}
+
 export type DocumentSection =
   | DocumentHeadingSection
   | DocumentParagraphSection
@@ -54,7 +62,8 @@ export type DocumentSection =
   | DocumentCodeSection
   | DocumentBlockquoteSection
   | DocumentSlideSection
-  | DocumentDividerSection;
+  | DocumentDividerSection
+  | DocumentImageSection;
 
 export interface DocumentSheet {
   name: string;
@@ -79,6 +88,9 @@ export interface DocumentIR {
   rawText: string;
   html: string;
   metadata: DocumentMetadata;
+  rawBuffer?: ArrayBuffer;
+  originalFile?: File;
+  sourceFormat?: string;
 }
 
 export interface DocumentConversionOptions {

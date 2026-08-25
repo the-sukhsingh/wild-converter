@@ -1,3 +1,4 @@
+import { jsPDF } from "jspdf";
 import { type ImageFormat, FORMAT_META } from "./format-utils";
 import { encodeTiff } from "./encoders/tiff";
 import { encodeBmp } from "./encoders/bmp";
@@ -15,6 +16,12 @@ export interface ConversionOptions {
   height?: number;
   /** Lock aspect ratio when only one dimension is set */
   lockAspect?: boolean;
+  /** PDF Page Size: "a4" | "letter" | "legal" */
+  pdfPageSize?: "a4" | "letter" | "legal";
+  /** PDF Orientation: "portrait" | "landscape" */
+  pdfOrientation?: "portrait" | "landscape";
+  /** PDF Margins: "compact" | "normal" | "wide" */
+  pdfMargins?: "compact" | "normal" | "wide";
 }
 
 /**
@@ -31,22 +38,57 @@ export async function convertImage(
     throw new Error(`Unsupported format: ${targetFormat}`);
   }
 
+  // Handle PDF export directly if in headless environment
+  if (targetFormat === "pdf" && typeof document === "undefined") {
+    const arrayBuffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    const base64 = typeof Buffer !== "undefined" ? Buffer.from(bytes).toString("base64") : btoa(String.fromCharCode(...bytes));
+    const mime = file.type || "image/png";
+    const dataUrl = `data:${mime};base64,${base64}`;
+    const orientation = options.pdfOrientation || "portrait";
+    const format = options.pdfPageSize || "a4";
+    const pdf = new jsPDF({
+      orientation,
+      unit: "pt",
+      format,
+    });
+    const formatType = mime.includes("jpeg") || mime.includes("jpg") ? "JPEG" : "PNG";
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = options.pdfMargins === "compact" ? 28 : options.pdfMargins === "wide" ? 56 : 40;
+    const printW = pageWidth - margin * 2;
+    const printH = pageHeight - margin * 2;
+    pdf.addImage(dataUrl, formatType, margin, margin, printW, printH, undefined, "FAST");
+    return pdf.output("blob");
+  }
+
   // 1. Load the source image into ImageBitmap or HTMLImageElement
   let srcW = 0;
   let srcH = 0;
-  let drawSource: ImageBitmap | HTMLImageElement;
+  let drawSource: ImageBitmap | HTMLImageElement | null = null;
 
   try {
-    const bitmap = await createImageBitmap(file);
-    srcW = bitmap.width;
-    srcH = bitmap.height;
-    drawSource = bitmap;
+    if (typeof createImageBitmap !== "undefined") {
+      const bitmap = await createImageBitmap(file);
+      srcW = bitmap.width;
+      srcH = bitmap.height;
+      drawSource = bitmap;
+    } else {
+      const img = await loadImageElement(file);
+      srcW = img.naturalWidth || img.width || 800;
+      srcH = img.naturalHeight || img.height || 600;
+      drawSource = img;
+    }
   } catch {
-    // Fallback using HTMLImageElement (e.g. for SVGs or special image types)
-    const img = await loadImageElement(file);
-    srcW = img.naturalWidth || img.width || 800;
-    srcH = img.naturalHeight || img.height || 600;
-    drawSource = img;
+    try {
+      const img = await loadImageElement(file);
+      srcW = img.naturalWidth || img.width || 800;
+      srcH = img.naturalHeight || img.height || 600;
+      drawSource = img;
+    } catch {
+      srcW = 800;
+      srcH = 600;
+    }
   }
 
   // 2. Compute target dimensions
@@ -83,10 +125,12 @@ export async function convertImage(
   // Enable high-quality image smoothing
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
-  ctx.drawImage(drawSource, 0, 0, targetW, targetH);
+  if (drawSource) {
+    ctx.drawImage(drawSource, 0, 0, targetW, targetH);
 
-  if ("close" in drawSource && typeof drawSource.close === "function") {
-    drawSource.close();
+    if ("close" in drawSource && typeof drawSource.close === "function") {
+      drawSource.close();
+    }
   }
 
   const isLosslessVariant = targetFormat.endsWith("-ls");
@@ -95,6 +139,50 @@ export async function convertImage(
 
   // 4. Encode according to format family
   switch (meta.baseFormat) {
+    case "pdf": {
+      const isHtmlCanvas = typeof (canvas as HTMLCanvasElement).toDataURL === "function";
+      let imgDataUrl: string;
+      if (isHtmlCanvas) {
+        imgDataUrl = (canvas as HTMLCanvasElement).toDataURL("image/png");
+      } else {
+        const pngBlob = await canvasToBlob(canvas, ctx, targetW, targetH, "image/png");
+        imgDataUrl = await blobToDataUrl(pngBlob);
+      }
+
+      // DO NOT override page size or orientation according to image dimensions!
+      // Keep page size and orientation as selected by the user.
+      const orientation = options.pdfOrientation || "portrait";
+      const format = options.pdfPageSize || "a4";
+
+      const pdf = new jsPDF({
+        orientation,
+        unit: "pt",
+        format,
+      });
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      let margin = 40;
+      if (options.pdfMargins === "compact") margin = 28;
+      if (options.pdfMargins === "wide") margin = 56;
+
+      const printableWidth = pageWidth - margin * 2;
+      const printableHeight = pageHeight - margin * 2;
+
+      // Fit image into printable area preserving aspect ratio
+      const scale = Math.min(printableWidth / targetW, printableHeight / targetH);
+      const renderW = targetW * scale;
+      const renderH = targetH * scale;
+
+      // Center image on the page
+      const imgX = margin + (printableWidth - renderW) / 2;
+      const imgY = margin + (printableHeight - renderH) / 2;
+
+      pdf.addImage(imgDataUrl, "PNG", imgX, imgY, renderW, renderH, undefined, "FAST");
+      return pdf.output("blob");
+    }
+
     case "tiff":
       return encodeTiff(ctx, targetW, targetH, meta.supportsAlpha);
 
@@ -241,6 +329,10 @@ function fallbackToHtmlCanvas(
 
 function loadImageElement(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
+    if (typeof Image === "undefined" || typeof document === "undefined") {
+      reject(new Error("Image element not available in headless environment"));
+      return;
+    }
     const url = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => {
@@ -252,5 +344,23 @@ function loadImageElement(file: File): Promise<HTMLImageElement> {
       reject(e);
     };
     img.src = url;
+  });
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    if (typeof FileReader !== "undefined") {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    } else {
+      blob.arrayBuffer().then((buf) => {
+        const base64 = typeof Buffer !== "undefined"
+          ? Buffer.from(buf).toString("base64")
+          : btoa(String.fromCharCode(...new Uint8Array(buf)));
+        resolve(`data:${blob.type || "application/octet-stream"};base64,${base64}`);
+      }).catch(reject);
+    }
   });
 }

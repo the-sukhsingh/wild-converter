@@ -1,17 +1,273 @@
 import { jsPDF } from "jspdf";
 import type { DocumentIR, DocumentConversionOptions } from "../types";
 
-export async function generatePdf(
+/**
+ * High-fidelity client-side DOCX rendering via docx-preview + html2canvas
+ * Captures all Microsoft Word typography, tables, borders, colors, and layout directly.
+ */
+async function renderDocxToPdfViaDom(
+  rawBuffer: ArrayBuffer,
+  options: DocumentConversionOptions
+): Promise<Blob | null> {
+  if (typeof document === "undefined" || typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const docx = await import("docx-preview");
+    const html2canvas = (await import("html2canvas")).default;
+
+    // Create an isolated container attached to DOM with visible rendering properties for canvas
+    const wrapper = document.createElement("div");
+    wrapper.id = "docx-pdf-render-wrapper";
+    wrapper.style.position = "fixed";
+    wrapper.style.left = "0px";
+    wrapper.style.top = "0px";
+    wrapper.style.width = "900px";
+    wrapper.style.background = "#ffffff";
+    wrapper.style.zIndex = "-9999";
+    wrapper.style.pointerEvents = "none";
+    wrapper.style.opacity = "1";
+    wrapper.style.overflow = "visible";
+
+    const styleOverride = document.createElement("style");
+    styleOverride.textContent = `
+      #docx-pdf-render-wrapper .docx-wrapper { background: #ffffff !important; padding: 0 !important; }
+      #docx-pdf-render-wrapper section.docx { box-shadow: none !important; margin: 0 auto 40px auto !important; background: #ffffff !important; }
+      #docx-pdf-render-wrapper table { border-collapse: collapse !important; }
+    `;
+    wrapper.appendChild(styleOverride);
+
+    const container = document.createElement("div");
+    container.style.width = "100%";
+    container.style.background = "#ffffff";
+    wrapper.appendChild(container);
+
+    document.body.appendChild(wrapper);
+
+    try {
+      await docx.renderAsync(rawBuffer, container, undefined, {
+        className: "docx",
+        inWrapper: true,
+        ignoreWidth: false,
+        ignoreHeight: false,
+        ignoreFonts: false,
+        breakPages: true,
+        experimental: true,
+        trimXmlDeclaration: true,
+        renderHeaders: true,
+        renderFooters: true,
+        renderFootnotes: true,
+        useBase64URL: true,
+      });
+
+      // Wait a microtick for fonts and layout geometry to compute
+      await new Promise((resolve) => setTimeout(resolve, 120));
+
+      const pageElements = container.querySelectorAll<HTMLElement>("section.docx, .docx-wrapper > section");
+
+      const orientation = options.pdfOrientation || "portrait";
+      const format = options.pdfPageSize || "a4";
+
+      if (pageElements.length > 0) {
+        const pdf = new jsPDF({
+          orientation,
+          unit: "pt",
+          format,
+        });
+
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+
+        for (let i = 0; i < pageElements.length; i++) {
+          const pageEl = pageElements[i];
+          if (i > 0) {
+            pdf.addPage();
+          }
+
+          const canvas = await html2canvas(pageEl, {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            backgroundColor: "#ffffff",
+            onclone: (clonedDoc) => {
+              // Copy all generated stylesheet rules into cloned document so styles are 100% retained
+              const styles = container.querySelectorAll("style");
+              styles.forEach((st) => clonedDoc.head.appendChild(st.cloneNode(true)));
+              const parentStyles = wrapper.querySelectorAll("style");
+              parentStyles.forEach((st) => clonedDoc.head.appendChild(st.cloneNode(true)));
+            },
+          });
+
+          const imgData = canvas.toDataURL("image/jpeg", 0.98);
+          pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight, undefined, "FAST");
+        }
+
+        return pdf.output("blob");
+      }
+    } finally {
+      if (document.body.contains(wrapper)) {
+        document.body.removeChild(wrapper);
+      }
+    }
+  } catch (err) {
+    console.warn("docx-preview DOM rendering error, falling back to rich HTML rendering:", err);
+  }
+  return null;
+}
+
+/**
+ * High-fidelity rich HTML to PDF renderer preserving styles, bold, italic, tables, colors, and layout
+ */
+async function renderHtmlToPdf(
+  html: string,
+  docTitle: string,
+  options: DocumentConversionOptions
+): Promise<Blob | null> {
+  if (typeof document === "undefined" || typeof window === "undefined" || !html.trim()) {
+    return null;
+  }
+
+  try {
+    const html2canvas = (await import("html2canvas")).default;
+
+    const orientation = options.pdfOrientation || "portrait";
+    const format = options.pdfPageSize || "a4";
+    const pdf = new jsPDF({
+      orientation,
+      unit: "pt",
+      format,
+    });
+
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+
+    const margin = options.pdfMargins === "compact" ? 24 : options.pdfMargins === "wide" ? 48 : 36;
+    const printWidth = pdfWidth - margin * 2;
+
+    const wrapper = document.createElement("div");
+    wrapper.style.position = "fixed";
+    wrapper.style.left = "0px";
+    wrapper.style.top = "0px";
+    wrapper.style.width = `${Math.round(printWidth * (96 / 72))}px`;
+    wrapper.style.background = "#ffffff";
+    wrapper.style.color = "#0f172a";
+    wrapper.style.zIndex = "-9999";
+    wrapper.style.pointerEvents = "none";
+    wrapper.style.opacity = "1";
+    wrapper.style.padding = "10px";
+    wrapper.style.fontFamily = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
+    wrapper.style.fontSize = "14px";
+    wrapper.style.lineHeight = "1.6";
+
+    wrapper.innerHTML = `
+      <style>
+        h1, h2, h3, h4, h5, h6 { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-weight: 700; color: #0f172a; margin-top: 1.2em; margin-bottom: 0.5em; line-height: 1.3; }
+        h1 { font-size: 24px; border-bottom: 1.5px solid #e2e8f0; padding-bottom: 6px; }
+        h2 { font-size: 19px; }
+        h3 { font-size: 16px; }
+        h4 { font-size: 14px; }
+        p { margin-bottom: 0.8em; color: #334155; }
+        strong, b { font-weight: 700; color: #0f172a; }
+        em, i { font-style: italic; }
+        u { text-decoration: underline; }
+        s, strike, del { text-decoration: line-through; }
+        table { width: 100%; border-collapse: collapse; margin: 1.2em 0; font-size: 13px; }
+        th, td { border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left; vertical-align: top; }
+        th { background: #f1f5f9; font-weight: 700; color: #0f172a; }
+        tr:nth-child(even) { background: #f8fafc; }
+        ul, ol { margin: 0.8em 0; padding-left: 24px; color: #334155; }
+        li { margin-bottom: 0.3em; }
+        blockquote { border-left: 4px solid #94a3b8; padding: 4px 0 4px 14px; color: #475569; font-style: italic; margin: 1.2em 0; }
+        code { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace; background: #f1f5f9; padding: 2px 5px; border-radius: 4px; font-size: 12px; color: #e11d48; }
+        pre { background: #f1f5f9; padding: 12px; border-radius: 6px; overflow-x: auto; font-family: monospace; font-size: 12px; }
+        img { max-width: 100%; height: auto; margin: 1em auto; display: block; }
+        hr { border: none; border-top: 1px solid #e2e8f0; margin: 1.5em 0; }
+      </style>
+      ${html}
+    `;
+
+    document.body.appendChild(wrapper);
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 80));
+
+      const canvas = await html2canvas(wrapper, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+      });
+
+      const imgWidthPx = canvas.width;
+      const imgHeightPx = canvas.height;
+
+      const renderW = printWidth;
+      const renderH = (imgHeightPx * renderW) / imgWidthPx;
+      const printHeight = pdfHeight - margin * 2;
+
+      let yPos = 0;
+      let pageNum = 0;
+
+      while (yPos < renderH) {
+        if (pageNum > 0) {
+          pdf.addPage();
+        }
+
+        const sliceCanvas = document.createElement("canvas");
+        sliceCanvas.width = imgWidthPx;
+        const sliceHeightPx = Math.min(
+          imgHeightPx - (yPos / renderH) * imgHeightPx,
+          (printHeight / renderW) * imgWidthPx
+        );
+        sliceCanvas.height = sliceHeightPx;
+        const sCtx = sliceCanvas.getContext("2d")!;
+        sCtx.drawImage(
+          canvas,
+          0,
+          (yPos / renderH) * imgHeightPx,
+          imgWidthPx,
+          sliceHeightPx,
+          0,
+          0,
+          imgWidthPx,
+          sliceHeightPx
+        );
+
+        const sliceData = sliceCanvas.toDataURL("image/jpeg", 0.98);
+        const sliceRenderH = (sliceHeightPx * renderW) / imgWidthPx;
+
+        pdf.addImage(sliceData, "JPEG", margin, margin, renderW, sliceRenderH, undefined, "FAST");
+
+        yPos += printHeight;
+        pageNum++;
+      }
+
+      return pdf.output("blob");
+    } finally {
+      if (document.body.contains(wrapper)) {
+        document.body.removeChild(wrapper);
+      }
+    }
+  } catch (err) {
+    console.warn("renderHtmlToPdf error:", err);
+    return null;
+  }
+}
+
+/**
+ * Standard IR-based PDF generator with support for text, images, tables, lists, codes, headers & footers
+ */
+function generatePdfFromIR(
   doc: DocumentIR,
   options: DocumentConversionOptions = {}
-): Promise<Blob> {
+): Blob {
   const orientation = options.pdfOrientation || "portrait";
   const format = options.pdfPageSize || "a4";
   const baseFontSize = options.pdfFontSize || 11;
-  const showPageNumbers = options.pdfPageNumbers ?? true;
+  const showPageNumbers = options.pdfPageNumbers ?? false;
   const showHeader = options.pdfHeaderTitle ?? true;
 
-  // Initialize jsPDF
   const pdf = new jsPDF({
     orientation,
     unit: "pt",
@@ -21,7 +277,6 @@ export async function generatePdf(
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
 
-  // Margins
   let margin = 40;
   if (options.pdfMargins === "compact") margin = 28;
   if (options.pdfMargins === "wide") margin = 56;
@@ -40,22 +295,20 @@ export async function generatePdf(
     return false;
   };
 
-  // Set default text styling
   pdf.setFont("helvetica", "normal");
   pdf.setTextColor(30, 30, 30);
 
-  // Render Document Title if available
+  // Render Document Title
   if (doc.title) {
     checkPageBreak(40);
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(baseFontSize + 9);
-    pdf.setTextColor(15, 23, 42); // slate-900
+    pdf.setTextColor(15, 23, 42);
     const titleLines = pdf.splitTextToSize(doc.title, contentWidth);
     pdf.text(titleLines, margin, currentY);
     currentY += titleLines.length * (baseFontSize + 11) + 12;
 
-    // Hairline divider under title
-    pdf.setDrawColor(226, 232, 240); // slate-200
+    pdf.setDrawColor(226, 232, 240);
     pdf.setLineWidth(0.75);
     pdf.line(margin, currentY, margin + contentWidth, currentY);
     currentY += 16;
@@ -64,6 +317,30 @@ export async function generatePdf(
   // Iterate over sections
   for (const section of doc.sections) {
     switch (section.type) {
+      case "image": {
+        if (section.src) {
+          const maxW = contentWidth;
+          const maxH = pageHeight - margin * 2.5;
+          const imgW = section.width || 800;
+          const imgH = section.height || 600;
+          const scale = Math.min(maxW / imgW, maxH / imgH);
+          const renderW = imgW * scale;
+          const renderH = imgH * scale;
+
+          checkPageBreak(renderH + 10);
+          const imgX = margin + (contentWidth - renderW) / 2;
+          try {
+            const format = section.src.startsWith("data:image/jpeg") ? "JPEG" : "PNG";
+            pdf.addImage(section.src, format, imgX, currentY, renderW, renderH, undefined, "FAST");
+            currentY += renderH + 12;
+          } catch {
+            pdf.text(`[Image: ${section.alt || "Embedded Image"}]`, margin, currentY + 12);
+            currentY += 24;
+          }
+        }
+        break;
+      }
+
       case "heading": {
         const sizeIncrement = Math.max(1, 7 - section.level * 1.5);
         const headingSize = baseFontSize + sizeIncrement;
@@ -72,7 +349,7 @@ export async function generatePdf(
         currentY += 6;
         pdf.setFont("helvetica", "bold");
         pdf.setFontSize(headingSize);
-        pdf.setTextColor(30, 41, 59); // slate-800
+        pdf.setTextColor(30, 41, 59);
 
         const headingLines = pdf.splitTextToSize(section.text, contentWidth);
         pdf.text(headingLines, margin, currentY);
@@ -83,7 +360,7 @@ export async function generatePdf(
       case "paragraph": {
         pdf.setFont("helvetica", "normal");
         pdf.setFontSize(baseFontSize);
-        pdf.setTextColor(51, 65, 85); // slate-700
+        pdf.setTextColor(51, 65, 85);
 
         const lineHeight = baseFontSize * 1.45;
         const paraLines = pdf.splitTextToSize(section.text, contentWidth);
@@ -111,12 +388,10 @@ export async function generatePdf(
 
           checkPageBreak(lineHeight * itemLines.length + 2);
 
-          // Draw bullet
           pdf.setFont("helvetica", "bold");
           pdf.text(bullet, margin + 4, currentY);
           pdf.setFont("helvetica", "normal");
 
-          // Draw text
           pdf.text(itemLines, margin + bulletIndent, currentY);
           currentY += itemLines.length * lineHeight + 3;
         });
@@ -136,12 +411,11 @@ export async function generatePdf(
         const cellPadding = 5;
         const rowHeight = baseFontSize * 1.6 + 6;
 
-        // Check if table header fits
         checkPageBreak(rowHeight * 2);
 
         // Header Row
         if (section.headers.length > 0) {
-          pdf.setFillColor(241, 245, 249); // slate-100
+          pdf.setFillColor(241, 245, 249);
           pdf.rect(margin, currentY, contentWidth, rowHeight, "F");
 
           pdf.setFont("helvetica", "bold");
@@ -154,7 +428,6 @@ export async function generatePdf(
             pdf.text(text, x, currentY + rowHeight / 2 + (baseFontSize - 1) / 3);
           });
 
-          // Header border
           pdf.setDrawColor(203, 213, 225);
           pdf.setLineWidth(0.75);
           pdf.rect(margin, currentY, contentWidth, rowHeight);
@@ -170,7 +443,7 @@ export async function generatePdf(
           checkPageBreak(rowHeight);
 
           if (rIdx % 2 === 1) {
-            pdf.setFillColor(248, 250, 252); // slate-50
+            pdf.setFillColor(248, 250, 252);
             pdf.rect(margin, currentY, contentWidth, rowHeight, "F");
           }
 
@@ -225,8 +498,7 @@ export async function generatePdf(
 
         checkPageBreak(quoteHeight);
 
-        // Quote bar
-        pdf.setDrawColor(148, 163, 184); // slate-400
+        pdf.setDrawColor(148, 163, 184);
         pdf.setLineWidth(2.5);
         pdf.line(margin + 2, currentY, margin + 2, currentY + quoteHeight - 4);
 
@@ -279,9 +551,8 @@ export async function generatePdf(
     pdf.setPage(i);
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(8.5);
-    pdf.setTextColor(148, 163, 184); // slate-400
+    pdf.setTextColor(148, 163, 184);
 
-    // Running Header
     if (showHeader && doc.title) {
       pdf.text(doc.title, margin, margin - 10);
       pdf.setDrawColor(241, 245, 249);
@@ -289,7 +560,6 @@ export async function generatePdf(
       pdf.line(margin, margin - 5, margin + contentWidth, margin - 5);
     }
 
-    // Page Number Footer
     if (showPageNumbers) {
       const footerText = `${i} / ${totalPages}`;
       const textWidth = pdf.getTextWidth(footerText);
@@ -299,4 +569,59 @@ export async function generatePdf(
   }
 
   return pdf.output("blob");
+}
+
+export async function generatePdf(
+  doc: DocumentIR,
+  options: DocumentConversionOptions = {}
+): Promise<Blob> {
+  // 1. If DOCX document with rawBuffer and DOM available, use docx-preview rendering
+  if (doc.sourceFormat === "docx" && doc.rawBuffer && typeof document !== "undefined") {
+    const domPdfBlob = await renderDocxToPdfViaDom(doc.rawBuffer, options);
+    if (domPdfBlob) return domPdfBlob;
+  }
+
+  // 2. If DOCX or rich document has HTML and DOM available, use rich HTML capture
+  if (doc.html && doc.html.length > 50 && typeof document !== "undefined") {
+    const htmlPdfBlob = await renderHtmlToPdf(doc.html, doc.title, options);
+    if (htmlPdfBlob) return htmlPdfBlob;
+  }
+
+  // 3. If single image document, produce fitted image PDF on the SELECTED page size and orientation
+  const singleImageSection = doc.sections.length === 1 && doc.sections[0].type === "image" ? doc.sections[0] : null;
+  if (singleImageSection && singleImageSection.src) {
+    const orientation = options.pdfOrientation || "portrait";
+    const format = options.pdfPageSize || "a4";
+    const pdf = new jsPDF({
+      orientation,
+      unit: "pt",
+      format,
+    });
+
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+
+    let margin = 40;
+    if (options.pdfMargins === "compact") margin = 28;
+    if (options.pdfMargins === "wide") margin = 56;
+
+    const printableWidth = pageWidth - margin * 2;
+    const printableHeight = pageHeight - margin * 2;
+
+    const imgW = singleImageSection.width || 800;
+    const imgH = singleImageSection.height || 600;
+
+    const scale = Math.min(printableWidth / imgW, printableHeight / imgH);
+    const renderW = imgW * scale;
+    const renderH = imgH * scale;
+
+    const imgX = margin + (printableWidth - renderW) / 2;
+    const imgY = margin + (printableHeight - renderH) / 2;
+
+    const formatType = singleImageSection.src.startsWith("data:image/jpeg") ? "JPEG" : "PNG";
+    pdf.addImage(singleImageSection.src, formatType, imgX, imgY, renderW, renderH, undefined, "FAST");
+    return pdf.output("blob");
+  }
+
+  return generatePdfFromIR(doc, options);
 }
