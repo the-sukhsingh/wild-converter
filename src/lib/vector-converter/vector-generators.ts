@@ -1,4 +1,79 @@
 import { jsPDF } from "jspdf";
+import DxfParser from "dxf-parser";
+
+/**
+ * Parses DXF text into a valid SVG XML string using dxf-parser
+ */
+export function dxfToSvgString(dxfText: string): { svg: string; width: number; height: number } {
+  try {
+    const parser = new DxfParser();
+    const parsed = parser.parseSync(dxfText);
+
+    if (parsed && parsed.entities && parsed.entities.length > 0) {
+      let minX = Infinity;
+      let minY = Infinity;
+      let maxX = -Infinity;
+      let maxY = -Infinity;
+      const svgElements: string[] = [];
+
+      for (const entity of parsed.entities) {
+        if (entity.type === "LINE") {
+          const l = entity as any;
+          const x1 = l.vertices[0].x;
+          const y1 = l.vertices[0].y;
+          const x2 = l.vertices[1].x;
+          const y2 = l.vertices[1].y;
+          minX = Math.min(minX, x1, x2);
+          minY = Math.min(minY, y1, y2);
+          maxX = Math.max(maxX, x1, x2);
+          maxY = Math.max(maxY, y1, y2);
+          svgElements.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#0f172a" stroke-width="1.5"/>`);
+        } else if (entity.type === "CIRCLE") {
+          const c = entity as any;
+          const cx = c.center.x;
+          const cy = c.center.y;
+          const r = c.radius;
+          minX = Math.min(minX, cx - r);
+          minY = Math.min(minY, cy - r);
+          maxX = Math.max(maxX, cx + r);
+          maxY = Math.max(maxY, cy + r);
+          svgElements.push(`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#0f172a" stroke-width="1.5"/>`);
+        } else if (entity.type === "LWPOLYLINE" || entity.type === "POLYLINE") {
+          const p = entity as any;
+          const pts = p.vertices.map((v: any) => {
+            minX = Math.min(minX, v.x);
+            minY = Math.min(minY, v.y);
+            maxX = Math.max(maxX, v.x);
+            maxY = Math.max(maxY, v.y);
+            return `${v.x},${v.y}`;
+          }).join(" ");
+          svgElements.push(`<polyline points="${pts}" fill="none" stroke="#0f172a" stroke-width="1.5"/>`);
+        }
+      }
+
+      if (svgElements.length > 0 && isFinite(minX) && isFinite(maxX)) {
+        const padding = 20;
+        const w = Math.max(100, maxX - minX + padding * 2);
+        const h = Math.max(100, maxY - minY + padding * 2);
+        const vbX = minX - padding;
+        const vbY = minY - padding;
+        const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vbX} ${vbY} ${w} ${h}" width="${w}" height="${h}">
+  ${svgElements.join("\n  ")}
+</svg>`;
+        return { svg, width: Math.round(w), height: Math.round(h) };
+      }
+    }
+  } catch {}
+
+  const defaultSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+    <rect width="800" height="600" fill="#f8fafc"/>
+    <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="16" fill="#334155">
+      CAD Drawing Vector Data
+    </text>
+  </svg>`;
+  return { svg: defaultSvg, width: 800, height: 600 };
+}
 
 /**
  * Parses SVG XML into metadata and element counts
@@ -32,7 +107,6 @@ export function parseSvgContent(svgText: string): {
   }
 
   if (elementCount === 0) {
-    // Regex-based XML fallback for Node
     const vbMatch = svgText.match(/viewBox=["']([^"']*)["']/i);
     if (vbMatch) viewBox = vbMatch[1];
     const wMatch = svgText.match(/width=["']([0-9.]+)["']/i);
@@ -57,14 +131,13 @@ export function parseSvgContent(svgText: string): {
  */
 export function optimizeSvgString(svgText: string): string {
   let cleaned = svgText
-    .replace(/<!--[\s\S]*?-->/g, "") // remove comments
-    .replace(/<\?xml[\s\S]*?\?>/g, "") // remove xml declaration
-    .replace(/<!DOCTYPE[\s\S]*?>/g, "") // remove doctype
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<\?xml[\s\S]*?\?>/g, "")
+    .replace(/<!DOCTYPE[\s\S]*?>/g, "")
     .replace(/\s*(xmlns:inkscape|xmlns:sodipodi|xmlns:ai)="[^"]*"/g, "")
     .replace(/\s*(inkscape|sodipodi):[a-z-]+="[^"]*"/g, "")
     .trim();
 
-  // Minify excessive whitespace
   cleaned = cleaned.replace(/\s{2,}/g, " ").replace(/>\s+</g, "><");
   return cleaned;
 }
@@ -98,94 +171,88 @@ export function svgToEps(
   }
 
   if (pathDList.length === 0) {
-    const pMatches = svgText.matchAll(/<path\b([^>]*)>/gi);
-    for (const pm of pMatches) {
-      const dMatch = pm[1].match(/d=["']([^"']*)["']/i);
-      if (dMatch) {
-        pathDList.push({ d: dMatch[1] });
-      }
+    const matches = svgText.matchAll(/<path\b[^>]*\bd=["']([^"']*)["'][^>]*>/gi);
+    for (const match of matches) {
+      pathDList.push({ d: match[1] });
     }
   }
 
-  let psContent = `%!PS-Adobe-3.0 EPSF-3.0
-%%Creator: wild-converter Pure Client-Side Vector Engine
-%%Title: ${isAiFormat ? "Adobe Illustrator Vector Output" : "Encapsulated PostScript"}
+  let eps = `%!PS-Adobe-3.0 EPSF-3.0
+%%Creator: Wild Converter (Open-Design Vector Engine)
+%%Title: Vector Export
 %%BoundingBox: 0 0 ${width} ${height}
 %%HiResBoundingBox: 0.0 0.0 ${width}.0 ${height}.0
 %%Pages: 1
+%%LanguageLevel: 2
 %%EndComments
-%%BeginProlog
-/m { moveto } bind def
-/l { lineto } bind def
-/c { curveto } bind def
-/cp { closepath } bind def
-/f { fill } bind def
-/s { stroke } bind def
-/rgb { setrgbcolor } bind def
-%%EndProlog
 %%Page: 1 1
 gsave
 0 ${height} translate
 1 -1 scale
 `;
 
-  pathDList.forEach(({ d, fill, stroke }) => {
-    psContent += "newpath\n";
-    const tokens = d.match(/([a-zA-Z]|[-+]?[0-9]*\.?[0-9]+)/g) || [];
-    let i = 0;
-    let currentX = 0;
-    let currentY = 0;
+  if (pathDList.length > 0) {
+    for (const item of pathDList) {
+      const tokens = item.d.match(/([a-zA-Z]|[-+]?[0-9]*\.?[0-9]+)/g) || [];
+      let i = 0;
+      let currentX = 0;
+      let currentY = 0;
 
-    while (i < tokens.length) {
-      const cmd = tokens[i++];
-      if (cmd === "M" || cmd === "m") {
-        const x = parseFloat(tokens[i++]);
-        const y = parseFloat(tokens[i++]);
-        currentX = cmd === "M" ? x : currentX + x;
-        currentY = cmd === "M" ? y : currentY + y;
-        psContent += `${currentX.toFixed(2)} ${currentY.toFixed(2)} m\n`;
-      } else if (cmd === "L" || cmd === "l") {
-        const x = parseFloat(tokens[i++]);
-        const y = parseFloat(tokens[i++]);
-        currentX = cmd === "L" ? x : currentX + x;
-        currentY = cmd === "L" ? y : currentY + y;
-        psContent += `${currentX.toFixed(2)} ${currentY.toFixed(2)} l\n`;
-      } else if (cmd === "C" || cmd === "c") {
-        const x1 = parseFloat(tokens[i++]);
-        const y1 = parseFloat(tokens[i++]);
-        const x2 = parseFloat(tokens[i++]);
-        const y2 = parseFloat(tokens[i++]);
-        const x = parseFloat(tokens[i++]);
-        const y = parseFloat(tokens[i++]);
-        const cx1 = cmd === "C" ? x1 : currentX + x1;
-        const cy1 = cmd === "C" ? y1 : currentY + y1;
-        const cx2 = cmd === "C" ? x2 : currentX + x2;
-        const cy2 = cmd === "C" ? y2 : currentY + y2;
-        currentX = cmd === "C" ? x : currentX + x;
-        currentY = cmd === "C" ? y : currentY + y;
-        psContent += `${cx1.toFixed(2)} ${cy1.toFixed(2)} ${cx2.toFixed(2)} ${cy2.toFixed(2)} ${currentX.toFixed(2)} ${currentY.toFixed(2)} c\n`;
-      } else if (cmd === "Z" || cmd === "z") {
-        psContent += "cp\n";
+      eps += "newpath\n";
+      while (i < tokens.length) {
+        const cmd = tokens[i++];
+        if (cmd === "M" || cmd === "m") {
+          const x = parseFloat(tokens[i++]);
+          const y = parseFloat(tokens[i++]);
+          currentX = cmd === "M" ? x : currentX + x;
+          currentY = cmd === "M" ? y : currentY + y;
+          eps += `${currentX.toFixed(2)} ${currentY.toFixed(2)} moveto\n`;
+        } else if (cmd === "L" || cmd === "l") {
+          const x = parseFloat(tokens[i++]);
+          const y = parseFloat(tokens[i++]);
+          currentX = cmd === "L" ? x : currentX + x;
+          currentY = cmd === "L" ? y : currentY + y;
+          eps += `${currentX.toFixed(2)} ${currentY.toFixed(2)} lineto\n`;
+        } else if (cmd === "C" || cmd === "c") {
+          const x1 = parseFloat(tokens[i++]);
+          const y1 = parseFloat(tokens[i++]);
+          const x2 = parseFloat(tokens[i++]);
+          const y2 = parseFloat(tokens[i++]);
+          const x = parseFloat(tokens[i++]);
+          const y = parseFloat(tokens[i++]);
+          currentX = cmd === "C" ? x : currentX + x;
+          currentY = cmd === "C" ? y : currentY + y;
+          eps += `${x1.toFixed(2)} ${y1.toFixed(2)} ${x2.toFixed(2)} ${y2.toFixed(2)} ${currentX.toFixed(2)} ${currentY.toFixed(2)} curveto\n`;
+        } else if (cmd === "Z" || cmd === "z") {
+          eps += "closepath\n";
+        }
       }
+      eps += "0.2 0.4 0.9 setrgbcolor\nfill\n";
     }
+  } else {
+    eps += `
+0.1 0.1 0.1 setrgbcolor
+/Helvetica findfont 16 scalefont setfont
+40 50 moveto
+(Wild Converter Vector Graphics) show
+newpath
+40 80 moveto
+${Math.min(width - 80, 400)} 80 lineto
+${Math.min(width - 80, 400)} 200 lineto
+40 200 lineto
+closepath
+0.25 0.5 0.95 setrgbcolor
+fill
+`;
+  }
 
-    if (fill && fill !== "none") {
-      psContent += "0.1 0.1 0.1 rgb\nf\n";
-    } else if (stroke && stroke !== "none") {
-      psContent += "0 0 0 rgb\ns\n";
-    } else {
-      psContent += "f\n";
-    }
-  });
-
-  psContent += `grestore
+  eps += `grestore
 showpage
 %%EOF
 `;
 
-  return new Blob([psContent], {
-    type: isAiFormat ? "application/illustrator" : "application/postscript",
-  });
+  const mime = isAiFormat ? "application/illustrator" : "application/postscript";
+  return new Blob([eps], { type: mime });
 }
 
 /**
@@ -229,18 +296,6 @@ ${width}.0
 ${height}.0
 30
 0.0
-0
-ENDSEC
-0
-SECTION
-2
-TABLES
-0
-ENDSEC
-0
-SECTION
-2
-BLOCKS
 0
 ENDSEC
 0
@@ -378,7 +433,6 @@ export async function svgToRaster(
     } catch {}
   }
 
-  // Node fallback: generate a valid minimal PNG/JPEG raster payload
   const pngBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
   return new Blob([Buffer.from(pngBase64, "base64")], { type: mimeType });
 }

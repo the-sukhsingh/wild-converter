@@ -180,7 +180,7 @@ export function transformPositions(
   const centerZ = options.centerMesh ? (bbox.minZ + bbox.maxZ) / 2 : 0;
 
   for (let i = 0; i < positions.length; i += 3) {
-    let x = (positions[i] - centerX) * options.scale;
+    const x = (positions[i] - centerX) * options.scale;
     let y = (positions[i + 1] - centerY) * options.scale;
     let z = (positions[i + 2] - centerZ) * options.scale;
 

@@ -51,13 +51,6 @@ export function VectorConverter({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const isCancelledRef = useRef(false);
 
-  // Sync initialFile
-  useEffect(() => {
-    if (initialFile && initialFile !== file) {
-      handleFileSelect(initialFile);
-    }
-  }, [initialFile]);
-
   const handleFileSelect = useCallback(async (f: File) => {
     setFile(f);
     setErrorMsg(null);
@@ -77,6 +70,13 @@ export function VectorConverter({
       setErrorMsg(err instanceof Error ? err.message : "Failed to parse vector graphic");
     }
   }, []);
+
+  // Sync initialFile
+  useEffect(() => {
+    if (initialFile && initialFile !== file) {
+      handleFileSelect(initialFile);
+    }
+  }, [initialFile, file, handleFileSelect]);
 
   // Live estimated size calculation
   useEffect(() => {

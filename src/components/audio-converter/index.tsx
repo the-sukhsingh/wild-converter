@@ -51,13 +51,6 @@ export function AudioConverter({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const isCancelledRef = useRef(false);
 
-  // Sync initialFile
-  useEffect(() => {
-    if (initialFile && initialFile !== file) {
-      handleFileSelect(initialFile);
-    }
-  }, [initialFile]);
-
   const handleFileSelect = useCallback(async (f: File) => {
     setFile(f);
     setErrorMsg(null);
@@ -80,6 +73,13 @@ export function AudioConverter({
       setErrorMsg(err instanceof Error ? err.message : "Failed to decode audio file");
     }
   }, []);
+
+  // Sync initialFile
+  useEffect(() => {
+    if (initialFile && initialFile !== file) {
+      handleFileSelect(initialFile);
+    }
+  }, [initialFile, file, handleFileSelect]);
 
   // Live estimated size calculation
   useEffect(() => {

@@ -60,13 +60,6 @@ export function DocumentConverter({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
-  // Sync initialFile if passed from parent
-  useEffect(() => {
-    if (initialFile && initialFile !== file) {
-      handleFileSelect(initialFile);
-    }
-  }, [initialFile]);
-
   // Handle file select
   const handleFileSelect = useCallback((f: File) => {
     setFile(f);
@@ -85,6 +78,13 @@ export function DocumentConverter({
     setConversionResult(null);
     setErrorMsg(null);
   }, []);
+
+  // Sync initialFile if passed from parent
+  useEffect(() => {
+    if (initialFile && initialFile !== file) {
+      handleFileSelect(initialFile);
+    }
+  }, [initialFile, file, handleFileSelect]);
 
   // Parse document in background when file changes
   useEffect(() => {

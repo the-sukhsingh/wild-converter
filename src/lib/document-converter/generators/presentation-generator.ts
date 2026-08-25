@@ -1,9 +1,10 @@
+import pptxgen from "pptxgenjs";
 import JSZip from "jszip";
 import type { DocumentIR, DocumentConversionOptions } from "../types";
 
 export async function generatePresentation(
   doc: DocumentIR,
-  format: "pptx" | "odp",
+  format: "pptx" | "ppt" | "odp",
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   options: DocumentConversionOptions = {}
 ): Promise<Blob> {
@@ -36,18 +37,65 @@ export async function generatePresentation(
     return buildOdpPackage(doc.title || "Presentation", slides);
   }
 
-  return buildPptxPackage(doc.title || "Presentation", slides);
+  // Use pptxgenjs for PPTX generation
+  try {
+    const pres = new pptxgen();
+    pres.layout = "LAYOUT_16x9";
+    pres.title = doc.title || "Presentation";
+
+    for (const slideData of slides) {
+      const slide = pres.addSlide();
+      // Slide Title
+      slide.addText(slideData.title, {
+        x: 0.8,
+        y: 0.6,
+        w: "85%",
+        h: 1.0,
+        fontSize: 24,
+        fontFace: "Helvetica",
+        bold: true,
+        color: "0f172a",
+      });
+
+      // Slide Bullet Content
+      if (slideData.points && slideData.points.length > 0) {
+        const bulletItems = slideData.points.map((p) => ({
+          text: p,
+          options: { fontSize: 14, color: "334155", bullet: true, breakLine: true },
+        }));
+
+        slide.addText(bulletItems, {
+          x: 0.8,
+          y: 1.8,
+          w: "85%",
+          h: 4.5,
+          fontFace: "Helvetica",
+        });
+      }
+    }
+
+    if (typeof window !== "undefined") {
+      const blob = (await pres.write({ outputType: "blob" })) as Blob;
+      return blob;
+    } else {
+      const buffer = (await pres.write({ outputType: "nodebuffer" })) as Buffer;
+      return new Blob([new Uint8Array(buffer)], {
+        type: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      });
+    }
+  } catch {
+    return buildFallbackPptxPackage(doc.title || "Presentation", slides);
+  }
 }
 
-// ─── PPTX OpenXML Package Builder ─────────────────────────────────────────────
+// ─── Fallback PPTX OpenXML Package Builder ─────────────────────────────────────
 
-async function buildPptxPackage(
+async function buildFallbackPptxPackage(
   title: string,
   slides: { title: string; points: string[] }[]
 ): Promise<Blob> {
   const zip = new JSZip();
 
-  // [Content_Types].xml
   let contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
   <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
@@ -60,7 +108,6 @@ async function buildPptxPackage(
   contentTypes += "\n</Types>";
   zip.file("[Content_Types].xml", contentTypes);
 
-  // _rels/.rels
   zip.file(
     "_rels/.rels",
     `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -69,7 +116,6 @@ async function buildPptxPackage(
 </Relationships>`
   );
 
-  // ppt/_rels/presentation.xml.rels
   let presRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`;
   slides.forEach((_, idx) => {
@@ -78,7 +124,6 @@ async function buildPptxPackage(
   presRels += "\n</Relationships>";
   zip.file("ppt/_rels/presentation.xml.rels", presRels);
 
-  // ppt/presentation.xml
   let slideIdList = "";
   slides.forEach((_, idx) => {
     slideIdList += `<p:sldId id="${256 + idx}" r:id="rId${idx + 1}"/>`;
@@ -95,7 +140,6 @@ async function buildPptxPackage(
 </p:presentation>`;
   zip.file("ppt/presentation.xml", presentationXml);
 
-  // Create each Slide XML
   slides.forEach((slide, idx) => {
     let bodyTextRuns = "";
     slide.points.forEach((p) => {

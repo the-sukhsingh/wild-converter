@@ -1,16 +1,8 @@
 "use client";
 
 import { useState, useCallback, type DragEvent } from "react";
+import dynamic from "next/dynamic";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { ImageConverter } from "@/components/image-converter";
-import { DocumentConverter } from "@/components/document-converter";
-import { AudioConverter } from "@/components/audio-converter";
-import { VideoConverter } from "@/components/video-converter";
-import { VectorConverter } from "@/components/vector-converter";
-import { ThreeDConverter } from "@/components/three-d-converter";
-import { FontConverter } from "@/components/font-converter";
-import { ArchiveConverter } from "@/components/archive-converter";
-import { CodeConverter } from "@/components/code-converter";
 
 import { detectFormat } from "@/lib/format-utils";
 import { isAudioFile } from "@/lib/audio-format-utils";
@@ -20,6 +12,49 @@ import { isThreeDFile } from "@/lib/three-d-format-utils";
 import { isFontFile } from "@/lib/font-format-utils";
 import { isArchiveFile } from "@/lib/archive-format-utils";
 import { isCodeFile } from "@/lib/code-format-utils";
+
+const LoadingWorkspace = () => (
+  <div className="flex-1 flex items-center justify-center p-8 text-xs font-mono text-[var(--muted-foreground)]">
+    initializing converter workspace...
+  </div>
+);
+
+const ImageConverter = dynamic(
+  () => import("@/components/image-converter").then((m) => m.ImageConverter),
+  { ssr: false, loading: LoadingWorkspace }
+);
+const DocumentConverter = dynamic(
+  () => import("@/components/document-converter").then((m) => m.DocumentConverter),
+  { ssr: false, loading: LoadingWorkspace }
+);
+const AudioConverter = dynamic(
+  () => import("@/components/audio-converter").then((m) => m.AudioConverter),
+  { ssr: false, loading: LoadingWorkspace }
+);
+const VideoConverter = dynamic(
+  () => import("@/components/video-converter").then((m) => m.VideoConverter),
+  { ssr: false, loading: LoadingWorkspace }
+);
+const VectorConverter = dynamic(
+  () => import("@/components/vector-converter").then((m) => m.VectorConverter),
+  { ssr: false, loading: LoadingWorkspace }
+);
+const ThreeDConverter = dynamic(
+  () => import("@/components/three-d-converter").then((m) => m.ThreeDConverter),
+  { ssr: false, loading: LoadingWorkspace }
+);
+const FontConverter = dynamic(
+  () => import("@/components/font-converter").then((m) => m.FontConverter),
+  { ssr: false, loading: LoadingWorkspace }
+);
+const ArchiveConverter = dynamic(
+  () => import("@/components/archive-converter").then((m) => m.ArchiveConverter),
+  { ssr: false, loading: LoadingWorkspace }
+);
+const CodeConverter = dynamic(
+  () => import("@/components/code-converter").then((m) => m.CodeConverter),
+  { ssr: false, loading: LoadingWorkspace }
+);
 
 export type ConverterCategory =
   | "images"

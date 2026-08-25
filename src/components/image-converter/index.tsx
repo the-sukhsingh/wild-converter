@@ -53,15 +53,20 @@ export function ImageConverter({ initialFile, onClearInitialFile }: ImageConvert
   const [resultBlob, setResultBlob] = useState<Blob | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  const handleFileSelect = useCallback((f: File) => {
+    setFile(f);
+    const detected = detectFormat(f);
+    setInputFormat(detected);
+    setTargetFormat(detected === "webp" ? "png" : "webp");
+    setSearchQuery("");
+  }, []);
+
   // Sync initialFile
   useEffect(() => {
     if (initialFile && initialFile !== file) {
-      setFile(initialFile);
-      const detected = detectFormat(initialFile);
-      setInputFormat(detected);
-      setTargetFormat(detected === "webp" ? "png" : "webp");
+      handleFileSelect(initialFile);
     }
-  }, [initialFile]);
+  }, [initialFile, file, handleFileSelect]);
 
   // Read dimensions when file changes
   useEffect(() => {
@@ -82,14 +87,6 @@ export function ImageConverter({ initialFile, onClearInitialFile }: ImageConvert
       active = false;
     };
   }, [file]);
-
-  const handleFileSelect = useCallback((f: File) => {
-    setFile(f);
-    const detected = detectFormat(f);
-    setInputFormat(detected);
-    setTargetFormat(detected === "webp" ? "png" : "webp");
-    setSearchQuery("");
-  }, []);
 
   // Live exact size background probe (debounced 40ms)
   useEffect(() => {

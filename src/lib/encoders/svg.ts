@@ -1,12 +1,48 @@
+import potrace from "potrace";
+import { encodeBmp } from "./bmp";
+
 /**
- * Pure-TypeScript SVG encoder.
- * Encapsulates image data into crisp standard vector SVG container with embedded data URL.
+ * SVG vector generator using potrace bitmap-to-vector bezier curve tracing.
+ * Traces high-fidelity SVG paths or generates standard SVG vector image containers.
  */
 export async function encodeSvg(
   ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   width: number,
-  height: number
+  height: number,
+  traceVector = true
 ): Promise<Blob> {
+  // If vector tracing is enabled and potrace is available
+  if (traceVector && typeof potrace !== "undefined" && typeof potrace.trace === "function") {
+    try {
+      const bmpBlob = encodeBmp(ctx, width, height, false);
+      const bmpArrayBuffer = await bmpBlob.arrayBuffer();
+      const bmpBuffer = Buffer.from(bmpArrayBuffer);
+
+      const svgString = await new Promise<string>((resolve, reject) => {
+        potrace.trace(
+          bmpBuffer,
+          {
+            threshold: 128,
+            turnPolicy: potrace.Potrace.TURNPOLICY_MINORITY,
+            optCurve: true,
+            optTolerance: 0.2,
+          },
+          (err: Error | null, svg: string) => {
+            if (err || !svg) reject(err || new Error("Potrace trace failed"));
+            else resolve(svg);
+          }
+        );
+      });
+
+      if (svgString && svgString.includes("<svg")) {
+        return new Blob([svgString], { type: "image/svg+xml" });
+      }
+    } catch {
+      // Fall through to containerized SVG
+    }
+  }
+
+  // High fidelity vector container fallback
   let base64Data = "";
   if (ctx && ctx.canvas && typeof (ctx.canvas as any).convertToBlob === "function") {
     try {
@@ -48,7 +84,9 @@ function blobToBase64(blob: Blob): Promise<string> {
     });
   }
   return blob.arrayBuffer().then((buf) => {
-    const base64 = Buffer.from(buf).toString("base64");
-    return `data:${blob.type};base64,${base64}`;
+    const base64 = typeof Buffer !== "undefined"
+      ? Buffer.from(buf).toString("base64")
+      : btoa(String.fromCharCode(...new Uint8Array(buf)));
+    return `data:${blob.type || "image/png"};base64,${base64}`;
   });
 }

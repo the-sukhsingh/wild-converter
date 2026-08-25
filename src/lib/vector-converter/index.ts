@@ -9,6 +9,7 @@ import {
   svgToDxf,
   svgToPdfVector,
   svgToRaster,
+  dxfToSvgString,
 } from "./vector-generators";
 import type {
   VectorConversionOptions,
@@ -20,13 +21,31 @@ export * from "./types";
 export * from "../vector-format-utils";
 
 /**
- * Parse an uploaded vector file (SVG, EPS, AI, DXF) into standard VectorMetadata
+ * Parse an uploaded vector file (SVG, EPS, AI, DXF, DWG) into standard VectorMetadata
  */
 export async function parseVectorFile(file: File): Promise<VectorMetadata> {
   const text = await file.text();
+  const lowerName = file.name.toLowerCase();
+
+  // If DXF CAD file
+  if (lowerName.endsWith(".dxf") || lowerName.endsWith(".dwg") || text.includes("SECTION") && text.includes("ENTITIES")) {
+    const { svg, width, height } = dxfToSvgString(text);
+    const { viewBox, pathCount, elementCount } = parseSvgContent(svg);
+    return {
+      width,
+      height,
+      viewBox,
+      pathCount,
+      elementCount,
+      fileSizeBytes: file.size,
+      name: file.name,
+      format: "dxf",
+      svgContent: svg,
+    };
+  }
 
   // If already SVG XML
-  if (text.includes("<svg") || file.type.includes("svg") || file.name.endsWith(".svg")) {
+  if (text.includes("<svg") || file.type.includes("svg") || lowerName.endsWith(".svg")) {
     const { width, height, viewBox, pathCount, elementCount } = parseSvgContent(text);
     return {
       width,

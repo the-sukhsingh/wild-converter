@@ -52,13 +52,6 @@ export function VideoConverter({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Sync initialFile
-  useEffect(() => {
-    if (initialFile && initialFile !== file) {
-      handleFileSelect(initialFile);
-    }
-  }, [initialFile]);
-
   const handleFileSelect = useCallback(async (f: File) => {
     setFile(f);
     setErrorMsg(null);
@@ -80,6 +73,13 @@ export function VideoConverter({
       setErrorMsg(err instanceof Error ? err.message : "Failed to load video file");
     }
   }, []);
+
+  // Sync initialFile
+  useEffect(() => {
+    if (initialFile && initialFile !== file) {
+      handleFileSelect(initialFile);
+    }
+  }, [initialFile, file, handleFileSelect]);
 
   // Live estimated size calculation
   useEffect(() => {

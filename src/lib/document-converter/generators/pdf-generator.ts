@@ -1,6 +1,68 @@
 import { jsPDF } from "jspdf";
 import type { DocumentIR, DocumentConversionOptions } from "../types";
 
+function sanitizeClonedDoc(clonedDoc: Document) {
+  const styleTags = clonedDoc.querySelectorAll("style, link[rel='stylesheet']");
+  styleTags.forEach((tag) => {
+    if (tag.textContent && (tag.textContent.includes("lab(") || tag.textContent.includes("oklch(") || tag.textContent.includes("oklab("))) {
+      tag.textContent = tag.textContent
+        .replace(/lab\([^)]+\)/gi, "rgb(15, 23, 42)")
+        .replace(/oklch\([^)]+\)/gi, "rgb(15, 23, 42)")
+        .replace(/oklab\([^)]+\)/gi, "rgb(15, 23, 42)");
+    }
+  });
+}
+
+let cachedDocxWasmModule: WebAssembly.Module | null = null;
+
+/**
+ * Fetch and compile the docx-to-pdf.wasm binary once and cache the WebAssembly.Module
+ */
+export async function getDocxToPdfWasmModule(): Promise<WebAssembly.Module | null> {
+  if (cachedDocxWasmModule) return cachedDocxWasmModule;
+  try {
+    if (typeof window !== "undefined") {
+      const resp = await fetch("/docx-to-pdf.wasm");
+      if (resp.ok) {
+        const buf = await resp.arrayBuffer();
+        cachedDocxWasmModule = await WebAssembly.compile(buf);
+        return cachedDocxWasmModule;
+      }
+    } else {
+      const fs = await import("node:fs/promises");
+      const path = await import("node:path");
+      const wasmPath = path.join(process.cwd(), "public", "docx-to-pdf.wasm");
+      const buf = await fs.readFile(wasmPath);
+      cachedDocxWasmModule = await WebAssembly.compile(buf);
+      return cachedDocxWasmModule;
+    }
+  } catch (err) {
+    console.warn("Could not load / compile docx-to-pdf.wasm:", err);
+  }
+  return null;
+}
+
+/**
+ * Pure client-side WASM DOCX to PDF conversion using docx-to-pdf-wasm
+ */
+export async function convertDocxToPdfWasm(
+  rawBuffer: ArrayBuffer
+): Promise<Blob | null> {
+  try {
+    const wasmModule = await getDocxToPdfWasmModule();
+    if (!wasmModule) return null;
+
+    const { convertToPdf } = await import("docx-to-pdf-wasm");
+    const pdfBytes = await convertToPdf(wasmModule, new Uint8Array(rawBuffer));
+    if (pdfBytes && pdfBytes.length > 0) {
+      return new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" });
+    }
+  } catch (err) {
+    console.warn("docx-to-pdf-wasm conversion error, falling back to DOM / IR renderer:", err);
+  }
+  return null;
+}
+
 /**
  * High-fidelity client-side DOCX rendering via docx-preview + html2canvas
  * Captures all Microsoft Word typography, tables, borders, colors, and layout directly.
@@ -91,6 +153,7 @@ async function renderDocxToPdfViaDom(
             logging: false,
             backgroundColor: "#ffffff",
             onclone: (clonedDoc) => {
+              sanitizeClonedDoc(clonedDoc);
               // Copy all generated stylesheet rules into cloned document so styles are 100% retained
               const styles = container.querySelectorAll("style");
               styles.forEach((st) => clonedDoc.head.appendChild(st.cloneNode(true)));
@@ -115,7 +178,6 @@ async function renderDocxToPdfViaDom(
   }
   return null;
 }
-
 /**
  * High-fidelity rich HTML to PDF renderer preserving styles, bold, italic, tables, colors, and layout
  */
@@ -197,6 +259,7 @@ async function renderHtmlToPdf(
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
+        onclone: (clonedDoc) => sanitizeClonedDoc(clonedDoc),
       });
 
       const imgWidthPx = canvas.width;
@@ -575,7 +638,13 @@ export async function generatePdf(
   doc: DocumentIR,
   options: DocumentConversionOptions = {}
 ): Promise<Blob> {
-  // 1. If DOCX document with rawBuffer and DOM available, use docx-preview rendering
+  // 1. If DOCX document with rawBuffer, convert using docx-to-pdf-wasm WASM engine!
+  if (doc.sourceFormat === "docx" && doc.rawBuffer) {
+    const wasmPdfBlob = await convertDocxToPdfWasm(doc.rawBuffer);
+    if (wasmPdfBlob) return wasmPdfBlob;
+  }
+
+  // 2. If DOCX document with rawBuffer and DOM available, use docx-preview rendering
   if (doc.sourceFormat === "docx" && doc.rawBuffer && typeof document !== "undefined") {
     const domPdfBlob = await renderDocxToPdfViaDom(doc.rawBuffer, options);
     if (domPdfBlob) return domPdfBlob;
@@ -617,10 +686,13 @@ export async function generatePdf(
 
     const imgX = margin + (printableWidth - renderW) / 2;
     const imgY = margin + (printableHeight - renderH) / 2;
-
-    const formatType = singleImageSection.src.startsWith("data:image/jpeg") ? "JPEG" : "PNG";
-    pdf.addImage(singleImageSection.src, formatType, imgX, imgY, renderW, renderH, undefined, "FAST");
-    return pdf.output("blob");
+    try {
+      if (!singleImageSection.src.startsWith("data:image/svg")) {
+        const formatType = singleImageSection.src.startsWith("data:image/jpeg") ? "JPEG" : "PNG";
+        pdf.addImage(singleImageSection.src, formatType, imgX, imgY, renderW, renderH, undefined, "FAST");
+        return pdf.output("blob");
+      }
+    } catch { }
   }
 
   return generatePdfFromIR(doc, options);

@@ -26,7 +26,7 @@ export interface ConversionOptions {
 
 /**
  * Convert an image File to a target format.
- * All processing is done client-side in the browser via Canvas and pure-TS encoders.
+ * Utilizes @jsquash WASM codecs (AVIF, WebP, JPEG, PNG), UTIF.js, omggif, Potrace, and Canvas.
  */
 export async function convertImage(
   file: File,
@@ -122,14 +122,13 @@ export async function convertImage(
     ctx.clearRect(0, 0, targetW, targetH);
   }
 
-  // Enable high-quality image smoothing
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
   if (drawSource) {
     ctx.drawImage(drawSource, 0, 0, targetW, targetH);
 
-    if ("close" in drawSource && typeof drawSource.close === "function") {
-      drawSource.close();
+    if ("close" in drawSource && typeof (drawSource as any).close === "function") {
+      (drawSource as any).close();
     }
   }
 
@@ -137,7 +136,7 @@ export async function convertImage(
   const rawQuality = options.quality ?? 0.92;
   const quality = isLosslessVariant ? 1.0 : Math.max(0.01, Math.min(1.0, rawQuality));
 
-  // 4. Encode according to format family
+  // 4. Encode according to format family using standard WASM/npm codecs
   switch (meta.baseFormat) {
     case "pdf": {
       const isHtmlCanvas = typeof (canvas as HTMLCanvasElement).toDataURL === "function";
@@ -149,8 +148,6 @@ export async function convertImage(
         imgDataUrl = await blobToDataUrl(pngBlob);
       }
 
-      // DO NOT override page size or orientation according to image dimensions!
-      // Keep page size and orientation as selected by the user.
       const orientation = options.pdfOrientation || "portrait";
       const format = options.pdfPageSize || "a4";
 
@@ -170,12 +167,10 @@ export async function convertImage(
       const printableWidth = pageWidth - margin * 2;
       const printableHeight = pageHeight - margin * 2;
 
-      // Fit image into printable area preserving aspect ratio
       const scale = Math.min(printableWidth / targetW, printableHeight / targetH);
       const renderW = targetW * scale;
       const renderH = targetH * scale;
 
-      // Center image on the page
       const imgX = margin + (printableWidth - renderW) / 2;
       const imgY = margin + (printableHeight - renderH) / 2;
 
@@ -201,36 +196,53 @@ export async function convertImage(
     case "svg":
       return encodeSvg(ctx, targetW, targetH);
 
-    case "jpeg": {
-      const mime = "image/jpeg";
-      return canvasToBlob(canvas, ctx, targetW, targetH, mime, quality);
-    }
-
-    case "png": {
-      const mime = "image/png";
-      return canvasToBlob(canvas, ctx, targetW, targetH, mime);
-    }
-
     case "webp": {
-      const mime = "image/webp";
-      return canvasToBlob(canvas, ctx, targetW, targetH, mime, quality);
+      try {
+        const { encode } = await import("@jsquash/webp");
+        const imgData = ctx.getImageData(0, 0, targetW, targetH);
+        const encoded = await encode(imgData, { quality: quality * 100 });
+        return new Blob([encoded], { type: "image/webp" });
+      } catch {
+        return canvasToBlob(canvas, ctx, targetW, targetH, "image/webp", quality);
+      }
     }
 
     case "avif": {
-      const mime = "image/avif";
       try {
-        return await canvasToBlob(canvas, ctx, targetW, targetH, mime, quality);
+        const { encode } = await import("@jsquash/avif");
+        const imgData = ctx.getImageData(0, 0, targetW, targetH);
+        const encoded = await encode(imgData, { quality: quality * 100 });
+        return new Blob([encoded], { type: "image/avif" });
       } catch {
-        // Fallback to high-quality WebP if browser canvas doesn't support direct AVIF export
         return canvasToBlob(canvas, ctx, targetW, targetH, "image/webp", quality);
+      }
+    }
+
+    case "jpeg": {
+      try {
+        const { encode } = await import("@jsquash/jpeg");
+        const imgData = ctx.getImageData(0, 0, targetW, targetH);
+        const encoded = await encode(imgData, { quality: Math.round(quality * 100) });
+        return new Blob([encoded], { type: "image/jpeg" });
+      } catch {
+        return canvasToBlob(canvas, ctx, targetW, targetH, "image/jpeg", quality);
+      }
+    }
+
+    case "png": {
+      try {
+        const { encode } = await import("@jsquash/png");
+        const imgData = ctx.getImageData(0, 0, targetW, targetH);
+        const encoded = await encode(imgData);
+        return new Blob([encoded], { type: "image/png" });
+      } catch {
+        return canvasToBlob(canvas, ctx, targetW, targetH, "image/png");
       }
     }
 
     case "heic":
     case "heif": {
-      // Modern browsers map HEIC export to high-quality WebP/AVIF or JPEG container
-      const mime = "image/webp";
-      return canvasToBlob(canvas, ctx, targetW, targetH, mime, quality);
+      return canvasToBlob(canvas, ctx, targetW, targetH, "image/webp", quality);
     }
 
     default: {
@@ -256,7 +268,6 @@ function resolveDimensions(
     if (targetH && !targetW) {
       return { targetW: Math.max(1, Math.round((srcW / srcH) * targetH)), targetH };
     }
-    // Both set: fit inside bounding box preserving aspect ratio
     const scale = Math.min(targetW / srcW, targetH / srcH);
     return {
       targetW: Math.max(1, Math.round(srcW * scale)),

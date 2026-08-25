@@ -1,5 +1,8 @@
 import { marked } from "marked";
 import TurndownService from "turndown";
+import * as YAML from "yaml";
+import Papa from "papaparse";
+import * as xml2js from "xml2js";
 import type {
   CodeConversionOptions,
   CodeConversionResult,
@@ -22,7 +25,6 @@ export function stripCodeComments(code: string, format: string): string {
     format.includes("php") ||
     format.includes("css")
   ) {
-    // Strip // comments and /* */ comments
     return code
       .replace(/\/\*[\s\S]*?\*\//g, "")
       .replace(/\/\/.*$/gm, "");
@@ -33,13 +35,10 @@ export function stripCodeComments(code: string, format: string): string {
     format.includes("perl") ||
     format.includes("yaml")
   ) {
-    // Strip # comments
     return code.replace(/#.*$/gm, "");
   } else if (format.includes("sql") || format.includes("ada") || format.includes("lua")) {
-    // Strip -- comments
     return code.replace(/--.*$/gm, "");
   } else if (format.includes("html") || format.includes("xml")) {
-    // Strip <!-- --> comments
     return code.replace(/<!--[\s\S]*?-->/g, "");
   }
   return code;
@@ -54,9 +53,7 @@ export function minifyCode(code: string, format: string): string {
   if (format === "json") {
     try {
       return JSON.stringify(JSON.parse(clean));
-    } catch {
-      // Fallback regex
-    }
+    } catch {}
   }
 
   clean = clean
@@ -84,60 +81,24 @@ export function formatCodeIndentation(
   const formattedLines: string[] = [];
 
   for (let i = 0; i < lines.length; i++) {
-    let line = lines[i].trim();
+    const line = lines[i].trim();
     if (!line) {
       formattedLines.push("");
       continue;
     }
 
-    // Decrement indent if closing bracket at start of line
     if (/^[}\]\)]/.test(line)) {
       indentLevel = Math.max(0, indentLevel - 1);
     }
 
     formattedLines.push(indentStr.repeat(indentLevel) + line);
 
-    // Increment indent if opening bracket at end of line
     const openMatches = (line.match(/[{\[\(]/g) || []).length;
     const closeMatches = (line.match(/[}\]\)]/g) || []).length;
     indentLevel = Math.max(0, indentLevel + openMatches - closeMatches);
   }
 
   return formattedLines.join("\n");
-}
-
-/**
- * JSON to YAML converter
- */
-export function jsonToYaml(jsonStr: string, indent: number = 2): string {
-  try {
-    const obj = JSON.parse(jsonStr);
-    const renderYaml = (val: unknown, depth: number): string => {
-      const sp = " ".repeat(depth * indent);
-      if (val === null) return "null";
-      if (typeof val === "boolean" || typeof val === "number") return String(val);
-      if (typeof val === "string") return JSON.stringify(val);
-
-      if (Array.isArray(val)) {
-        if (val.length === 0) return "[]";
-        return val.map((item) => `\n${sp}- ${renderYaml(item, depth + 1).trimStart()}`).join("");
-      }
-
-      if (typeof val === "object") {
-        const entries = Object.entries(val as Record<string, unknown>);
-        if (entries.length === 0) return "{}";
-        return entries
-          .map(([k, v]) => `\n${sp}${k}: ${renderYaml(v, depth + 1).trimStart()}`)
-          .join("");
-      }
-
-      return String(val);
-    };
-
-    return renderYaml(obj, 0).trim();
-  } catch {
-    return jsonStr;
-  }
 }
 
 /**
@@ -165,7 +126,8 @@ export async function parseCodeFile(file: File): Promise<CodeMetadata> {
 }
 
 /**
- * Master code & markup converter
+ * Master code & markup converter using standard packages:
+ * yaml, papaparse, xml2js, marked, turndown
  */
 export async function convertCode(
   meta: CodeMetadata,
@@ -179,19 +141,48 @@ export async function convertCode(
   let processedCode = meta.rawCode;
 
   // 1. Cross-conversion transforms
-  const srcExt = originalFileName.split(".").pop()?.toLowerCase();
+  const srcExt = originalFileName.split(".").pop()?.toLowerCase() || "";
   const targetExt = formatInfo.extension;
+  const indentNum = typeof options.indentation === "number" ? options.indentation : 2;
 
-  if ((srcExt === "md" || srcExt === "markdown") && (targetExt === "html" || targetExt === "htm")) {
-    // Markdown to HTML
-    processedCode = await marked.parse(meta.rawCode);
-  } else if ((srcExt === "html" || srcExt === "htm") && targetExt === "md") {
-    // HTML to Markdown
-    const turndown = new TurndownService({ headingStyle: "atx", codeBlockStyle: "fenced" });
-    processedCode = turndown.turndown(meta.rawCode);
-  } else if (srcExt === "json" && (targetExt === "yaml" || targetExt === "yml")) {
-    // JSON to YAML
-    processedCode = jsonToYaml(meta.rawCode, typeof options.indentation === "number" ? options.indentation : 2);
+  try {
+    // Markdown <-> HTML
+    if ((srcExt === "md" || srcExt === "markdown") && (targetExt === "html" || targetExt === "htm")) {
+      processedCode = await marked.parse(meta.rawCode);
+    } else if ((srcExt === "html" || srcExt === "htm") && targetExt === "md") {
+      const turndown = new TurndownService({ headingStyle: "atx", codeBlockStyle: "fenced" });
+      processedCode = turndown.turndown(meta.rawCode);
+    }
+    // JSON <-> YAML
+    else if (srcExt === "json" && (targetExt === "yaml" || targetExt === "yml")) {
+      const parsed = JSON.parse(meta.rawCode);
+      processedCode = YAML.stringify(parsed, { indent: indentNum });
+    } else if ((srcExt === "yaml" || srcExt === "yml") && targetExt === "json") {
+      const parsed = YAML.parse(meta.rawCode);
+      processedCode = JSON.stringify(parsed, null, indentNum);
+    }
+    // CSV / TSV transforms
+    else if (srcExt === "csv" && targetExt === "json") {
+      const parsed = Papa.parse(meta.rawCode, { header: true });
+      processedCode = JSON.stringify(parsed.data, null, indentNum);
+    } else if (srcExt === "json" && targetExt === "csv") {
+      const parsed = JSON.parse(meta.rawCode);
+      if (Array.isArray(parsed)) {
+        processedCode = Papa.unparse(parsed);
+      }
+    }
+    // XML <-> JSON
+    else if (srcExt === "xml" && targetExt === "json") {
+      const parsed = await xml2js.parseStringPromise(meta.rawCode);
+      processedCode = JSON.stringify(parsed, null, indentNum);
+    } else if (srcExt === "json" && targetExt === "xml") {
+      const parsed = JSON.parse(meta.rawCode);
+      const builder = new xml2js.Builder({ headless: false, renderOpts: { pretty: true, indent: " ".repeat(indentNum) } });
+      processedCode = builder.buildObject(parsed);
+    }
+  } catch {
+    // Keep rawCode on syntax parse errors
+    processedCode = meta.rawCode;
   }
 
   // 2. Comments stripping
