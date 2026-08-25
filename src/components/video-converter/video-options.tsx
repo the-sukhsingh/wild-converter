@@ -1,6 +1,6 @@
 "use client";
 
-import { VIDEO_FORMATS } from "@/lib/video-format-utils";
+import { VIDEO_FORMATS, type VideoFormat } from "@/lib/video-format-utils";
 import type { VideoConversionOptions, VideoMetadata } from "@/lib/video-converter";
 
 interface VideoOptionsProps {
@@ -16,18 +16,18 @@ export function VideoOptionsPanel({
   metadata,
   onOptionsChange,
 }: VideoOptionsProps) {
-  const formatInfo = VIDEO_FORMATS[options.format] || VIDEO_FORMATS.mp4;
-  const isAudioOnly = formatInfo.category === "audio-extract";
+  const formatInfo = VIDEO_FORMATS[options.format as VideoFormat] || VIDEO_FORMATS.mp4;
+  const isAudioOnly = formatInfo.category === "audio-extract" || ["mp3", "wav", "aac"].includes(targetFormat);
   const isGif = options.format === "gif";
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 py-3 border-y border-[var(--border)]">
-      {/* Target Resolution */}
-      {!isAudioOnly && (
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 py-3 border-y border-[var(--border)] min-h-[82px] items-center">
+      {/* Slot 1: Target Resolution or Audio Bitrate */}
+      {!isAudioOnly ? (
         <div className="flex flex-col gap-1.5">
           <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
             <span>Resolution</span>
-            <span className="font-semibold text-[var(--foreground)]">
+            <span className="font-semibold text-[var(--foreground)] uppercase tabular-nums">
               {options.resolution.toUpperCase()}
             </span>
           </div>
@@ -48,14 +48,24 @@ export function VideoOptionsPanel({
             <option value="360p">360p Compact</option>
           </select>
         </div>
+      ) : (
+        <div className="flex flex-col gap-1.5">
+          <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+            <span>Encoding Quality</span>
+            <span className="font-semibold text-[var(--foreground)]">High Spec</span>
+          </div>
+          <div className="flex items-center text-xs font-mono bg-[var(--card)] h-8 px-2.5 rounded-md text-[var(--foreground)]">
+            192 kbps Direct Transcode
+          </div>
+        </div>
       )}
 
-      {/* Frame Rate */}
-      {!isAudioOnly && (
+      {/* Slot 2: Frame Rate or Audio Sample Rate */}
+      {!isAudioOnly ? (
         <div className="flex flex-col gap-1.5">
           <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
             <span>Frame Rate</span>
-            <span className="font-semibold text-[var(--foreground)]">
+            <span className="font-semibold text-[var(--foreground)] tabular-nums">
               {options.fps} fps
             </span>
           </div>
@@ -85,14 +95,24 @@ export function VideoOptionsPanel({
             )}
           </select>
         </div>
+      ) : (
+        <div className="flex flex-col gap-1.5">
+          <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+            <span>Sample Rate</span>
+            <span className="font-semibold text-[var(--foreground)]">48 kHz</span>
+          </div>
+          <div className="flex items-center text-xs font-mono bg-[var(--card)] h-8 px-2.5 rounded-md text-[var(--foreground)]">
+            48 kHz Studio Broadcast
+          </div>
+        </div>
       )}
 
-      {/* Speed Multiplier */}
-      {!isAudioOnly && (
+      {/* Slot 3: Speed Multiplier or Audio Channels */}
+      {!isAudioOnly ? (
         <div className="flex flex-col gap-1.5">
           <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
             <span>Playback Speed</span>
-            <span className="font-semibold text-[var(--foreground)]">
+            <span className="font-semibold text-[var(--foreground)] tabular-nums">
               {options.speed}x
             </span>
           </div>
@@ -101,9 +121,7 @@ export function VideoOptionsPanel({
               <button
                 key={spd}
                 type="button"
-                onClick={() =>
-                  onOptionsChange({ ...options, speed: spd })
-                }
+                onClick={() => onOptionsChange({ ...options, speed: spd })}
                 className={`h-7 text-xs font-mono rounded transition-colors cursor-pointer ${
                   options.speed === spd
                     ? "bg-[var(--foreground)] text-[var(--background)] font-medium"
@@ -115,48 +133,46 @@ export function VideoOptionsPanel({
             ))}
           </div>
         </div>
+      ) : (
+        <div className="flex flex-col gap-1.5">
+          <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+            <span>Channel Layout</span>
+            <span className="font-semibold text-[var(--foreground)]">Stereo</span>
+          </div>
+          <div className="flex items-center text-xs font-mono bg-[var(--card)] h-8 px-2.5 rounded-md text-[var(--foreground)]">
+            2-Channel Stereo Mix
+          </div>
+        </div>
       )}
 
-      {/* Mute Audio or Loop Toggle */}
-      <div className="flex flex-col justify-end">
-        {isGif ? (
+      {/* Slot 4: Audio Track Mute / Include Toggle */}
+      {!isAudioOnly && !isGif ? (
+        <div className="flex flex-col justify-end">
           <label
             className={`flex items-center gap-2 text-xs font-mono h-8 px-2.5 rounded-md cursor-pointer select-none transition-colors ${
-              options.gifLoop
+              !options.mute
                 ? "bg-[var(--primary)] text-[var(--primary-foreground)] font-medium"
                 : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
             }`}
           >
             <input
               type="checkbox"
-              checked={options.gifLoop}
+              checked={!options.mute}
               onChange={(e) =>
-                onOptionsChange({ ...options, gifLoop: e.target.checked })
+                onOptionsChange({ ...options, mute: !e.target.checked })
               }
               className="rounded accent-[var(--foreground)] sr-only"
             />
-            <span>Infinite GIF Loop</span>
+            <span>Audio: {!options.mute ? "Included" : "Muted"}</span>
           </label>
-        ) : (
-          <label
-            className={`flex items-center gap-2 text-xs font-mono h-8 px-2.5 rounded-md cursor-pointer select-none transition-colors ${
-              options.mute
-                ? "bg-[var(--primary)] text-[var(--primary-foreground)] font-medium"
-                : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
-            }`}
-          >
-            <input
-              type="checkbox"
-              checked={options.mute}
-              onChange={(e) =>
-                onOptionsChange({ ...options, mute: e.target.checked })
-              }
-              className="rounded accent-[var(--foreground)] sr-only"
-            />
-            <span>Mute / Remove Audio Track</span>
-          </label>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="flex flex-col justify-end">
+          <div className="flex items-center gap-2 text-xs font-mono h-8 px-2.5 rounded-md bg-[var(--card)] text-[var(--muted-foreground)]">
+            <span>100% Client-Side WASM</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

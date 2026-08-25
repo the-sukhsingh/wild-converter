@@ -19,7 +19,7 @@ export function FontOptionsPanel({
   const formatInfo = FONT_FORMATS[options.format] || FONT_FORMATS.woff2;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 py-3 border-y border-[var(--border)]">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 py-3 border-y border-[var(--border)] min-h-[82px] items-center">
       {/* Custom Family Name */}
       <div className="flex flex-col gap-1.5">
         <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">

@@ -20,12 +20,12 @@ export function AudioOptionsPanel({
   const isLossless = formatInfo.isLossless || targetFormat.endsWith("-ls");
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 py-3 border-y border-[var(--border)]">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 py-3 border-y border-[var(--border)] min-h-[82px] items-center">
       {/* Sample Rate */}
       <div className="flex flex-col gap-1.5">
         <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
           <span>Sample Rate</span>
-          <span className="font-semibold text-[var(--foreground)]">
+          <span className="font-semibold text-[var(--foreground)] tabular-nums">
             {options.sampleRate / 1000} kHz
           </span>
         </div>
@@ -51,7 +51,7 @@ export function AudioOptionsPanel({
         <div className="flex flex-col gap-1.5">
           <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
             <span>Bitrate</span>
-            <span className="font-semibold text-[var(--foreground)]">
+            <span className="font-semibold text-[var(--foreground)] tabular-nums">
               {options.bitrate} kbps
             </span>
           </div>
@@ -74,7 +74,7 @@ export function AudioOptionsPanel({
         <div className="flex flex-col gap-1.5">
           <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
             <span>Bit Depth</span>
-            <span className="font-semibold text-[var(--foreground)]">
+            <span className="font-semibold text-[var(--foreground)] tabular-nums">
               {options.bitDepth}-bit
             </span>
           </div>
@@ -146,7 +146,7 @@ export function AudioOptionsPanel({
             }
             className="rounded accent-[var(--foreground)] sr-only"
           />
-          <span>Peak Volume Normalization (0 dB)</span>
+          <span>Peak Normalization (0 dB)</span>
         </label>
       </div>
     </div>
