@@ -19,14 +19,24 @@ import { ArchiveFormatSelector } from "./archive-format-selector";
 import { ArchiveOptionsPanel } from "./archive-options";
 import { ArchiveActionBar } from "./archive-action-bar";
 
+interface OnConversionCompletePayload {
+  inputFileName: string;
+  outputFileName: string;
+  inputSize: number;
+  outputSize: number;
+  status: "done" | "error";
+}
+
 interface ArchiveConverterProps {
   initialFile?: File | null;
   onClearInitialFile?: () => void;
+  onConversionComplete?: (payload: OnConversionCompletePayload) => void;
 }
 
 export function ArchiveConverter({
   initialFile,
   onClearInitialFile,
+  onConversionComplete,
 }: ArchiveConverterProps = {}) {
   const [file, setFile] = useState<File | null>(initialFile || null);
   const [metadata, setMetadata] = useState<ArchiveMetadata | null>(null);
@@ -153,13 +163,20 @@ export function ArchiveConverter({
       setConversionResult(res);
       setConversionProgress(100);
       setIsConverting(false);
+      onConversionComplete?.({
+        inputFileName: file.name,
+        outputFileName: `${file.name.replace(/\.[^/.]+$/, "")}.${ARCHIVE_FORMATS[targetFormat]?.extension || "zip"}`,
+        inputSize: file.size,
+        outputSize: res.blob.size,
+        status: "done",
+      });
     } catch (err) {
       if (isCancelledRef.current) return;
       console.error("Conversion error:", err);
       setErrorMsg(err instanceof Error ? err.message : "Archive repackaging failed");
       setIsConverting(false);
     }
-  }, [metadata, file, targetFormat, options]);
+  }, [metadata, file, targetFormat, options, onConversionComplete]);
 
   const hasFile = !!file;
   const targetMeta = ARCHIVE_FORMATS[targetFormat];

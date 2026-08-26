@@ -22,12 +22,21 @@ import { ActionBar } from "./action-bar";
 
 type ConvertState = "idle" | "converting" | "done" | "error";
 
+interface OnConversionCompletePayload {
+  inputFileName: string;
+  outputFileName: string;
+  inputSize: number;
+  outputSize: number;
+  status: "done" | "error";
+}
+
 interface ImageConverterProps {
   initialFile?: File | null;
   onClearInitialFile?: () => void;
+  onConversionComplete?: (payload: OnConversionCompletePayload) => void;
 }
 
-export function ImageConverter({ initialFile, onClearInitialFile }: ImageConverterProps = {}) {
+export function ImageConverter({ initialFile, onClearInitialFile, onConversionComplete }: ImageConverterProps = {}) {
   const [file, setFile] = useState<File | null>(initialFile || null);
   const [inputFormat, setInputFormat] = useState<ImageFormat | null>(null);
   const [targetFormat, setTargetFormat] = useState<ImageFormat>("webp");
@@ -179,12 +188,19 @@ export function ImageConverter({ initialFile, onClearInitialFile }: ImageConvert
       setResultUrl(url);
       setConversionProgress(100);
       setState("done");
+      onConversionComplete?.({
+        inputFileName: file.name,
+        outputFileName: buildOutputName(file.name, targetFormat),
+        inputSize: file.size,
+        outputSize: blob.size,
+        status: "done",
+      });
     } catch (err) {
       if (isCancelledRef.current) return;
       setErrorMsg(err instanceof Error ? err.message : "Conversion failed");
       setState("error");
     }
-  }, [file, targetFormat, options, probedBlob]);
+  }, [file, targetFormat, options, probedBlob, onConversionComplete]);
 
   const hasFile = !!file;
   const outputName = file ? buildOutputName(file.name, targetFormat) : "";

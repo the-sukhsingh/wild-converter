@@ -19,14 +19,24 @@ import { AudioFormatSelector } from "./audio-format-selector";
 import { AudioOptionsPanel } from "./audio-options";
 import { AudioActionBar } from "./audio-action-bar";
 
+interface OnConversionCompletePayload {
+  inputFileName: string;
+  outputFileName: string;
+  inputSize: number;
+  outputSize: number;
+  status: "done" | "error";
+}
+
 interface AudioConverterProps {
   initialFile?: File | null;
   onClearInitialFile?: () => void;
+  onConversionComplete?: (payload: OnConversionCompletePayload) => void;
 }
 
 export function AudioConverter({
   initialFile,
   onClearInitialFile,
+  onConversionComplete,
 }: AudioConverterProps = {}) {
   const [file, setFile] = useState<File | null>(initialFile || null);
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
@@ -153,13 +163,20 @@ export function AudioConverter({
       setConversionResult(res);
       setConversionProgress(100);
       setIsConverting(false);
+      onConversionComplete?.({
+        inputFileName: file.name,
+        outputFileName: `${file.name.replace(/\.[^/.]+$/, "")}.${AUDIO_FORMATS[targetFormat]?.extension || "mp3"}`,
+        inputSize: file.size,
+        outputSize: res.blob.size,
+        status: "done",
+      });
     } catch (err) {
       if (isCancelledRef.current) return;
       console.error("Conversion error:", err);
       setErrorMsg(err instanceof Error ? err.message : "Audio conversion failed");
       setIsConverting(false);
     }
-  }, [audioBuffer, file, targetFormat, options]);
+  }, [audioBuffer, file, targetFormat, options, onConversionComplete]);
 
   const hasFile = !!file;
   const targetMeta = AUDIO_FORMATS[targetFormat];

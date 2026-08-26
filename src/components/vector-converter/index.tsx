@@ -19,14 +19,24 @@ import { VectorFormatSelector } from "./vector-format-selector";
 import { VectorOptionsPanel } from "./vector-options";
 import { VectorActionBar } from "./vector-action-bar";
 
+interface OnConversionCompletePayload {
+  inputFileName: string;
+  outputFileName: string;
+  inputSize: number;
+  outputSize: number;
+  status: "done" | "error";
+}
+
 interface VectorConverterProps {
   initialFile?: File | null;
   onClearInitialFile?: () => void;
+  onConversionComplete?: (payload: OnConversionCompletePayload) => void;
 }
 
 export function VectorConverter({
   initialFile,
   onClearInitialFile,
+  onConversionComplete,
 }: VectorConverterProps = {}) {
   const [file, setFile] = useState<File | null>(initialFile || null);
   const [metadata, setMetadata] = useState<VectorMetadata | null>(null);
@@ -147,13 +157,20 @@ export function VectorConverter({
       setConversionResult(res);
       setConversionProgress(100);
       setIsConverting(false);
+      onConversionComplete?.({
+        inputFileName: file.name,
+        outputFileName: `${file.name.replace(/\.[^/.]+$/, "")}.${VECTOR_FORMATS[targetFormat]?.extension || "svg"}`,
+        inputSize: file.size,
+        outputSize: res.blob.size,
+        status: "done",
+      });
     } catch (err) {
       if (isCancelledRef.current) return;
       console.error("Conversion error:", err);
       setErrorMsg(err instanceof Error ? err.message : "Vector conversion failed");
       setIsConverting(false);
     }
-  }, [file, metadata, targetFormat, options]);
+  }, [file, metadata, targetFormat, options, onConversionComplete]);
 
   const hasFile = !!file;
   const targetMeta = VECTOR_FORMATS[targetFormat];

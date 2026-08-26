@@ -19,14 +19,24 @@ import { ThreeDFormatSelector } from "./three-d-format-selector";
 import { ThreeDOptionsPanel } from "./three-d-options";
 import { ThreeDActionBar } from "./three-d-action-bar";
 
+interface OnConversionCompletePayload {
+  inputFileName: string;
+  outputFileName: string;
+  inputSize: number;
+  outputSize: number;
+  status: "done" | "error";
+}
+
 interface ThreeDConverterProps {
   initialFile?: File | null;
   onClearInitialFile?: () => void;
+  onConversionComplete?: (payload: OnConversionCompletePayload) => void;
 }
 
 export function ThreeDConverter({
   initialFile,
   onClearInitialFile,
+  onConversionComplete,
 }: ThreeDConverterProps = {}) {
   const [file, setFile] = useState<File | null>(initialFile || null);
   const [metadata, setMetadata] = useState<ThreeDMetadata | null>(null);
@@ -144,13 +154,20 @@ export function ThreeDConverter({
       setConversionResult(res);
       setConversionProgress(100);
       setIsConverting(false);
+      onConversionComplete?.({
+        inputFileName: file.name,
+        outputFileName: `${file.name.replace(/\.[^/.]+$/, "")}.${THREE_D_FORMATS[targetFormat]?.extension || "glb"}`,
+        inputSize: file.size,
+        outputSize: res.blob.size,
+        status: "done",
+      });
     } catch (err) {
       if (isCancelledRef.current) return;
       console.error("Conversion error:", err);
       setErrorMsg(err instanceof Error ? err.message : "3D mesh conversion failed");
       setIsConverting(false);
     }
-  }, [file, metadata, targetFormat, options]);
+  }, [file, metadata, targetFormat, options, onConversionComplete]);
 
   const hasFile = !!file;
   const targetMeta = THREE_D_FORMATS[targetFormat];

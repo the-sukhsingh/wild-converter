@@ -20,14 +20,24 @@ import { FontFormatSelector } from "./font-format-selector";
 import { FontOptionsPanel } from "./font-options";
 import { FontActionBar } from "./font-action-bar";
 
+interface OnConversionCompletePayload {
+  inputFileName: string;
+  outputFileName: string;
+  inputSize: number;
+  outputSize: number;
+  status: "done" | "error";
+}
+
 interface FontConverterProps {
   initialFile?: File | null;
   onClearInitialFile?: () => void;
+  onConversionComplete?: (payload: OnConversionCompletePayload) => void;
 }
 
 export function FontConverter({
   initialFile,
   onClearInitialFile,
+  onConversionComplete,
 }: FontConverterProps = {}) {
   const [file, setFile] = useState<File | null>(initialFile || null);
   const [font, setFont] = useState<Font | null>(null);
@@ -147,13 +157,20 @@ export function FontConverter({
       setConversionResult(res);
       setConversionProgress(100);
       setIsConverting(false);
+      onConversionComplete?.({
+        inputFileName: file.name,
+        outputFileName: `${file.name.replace(/\.[^/.]+$/, "")}.${FONT_FORMATS[targetFormat]?.extension || "woff2"}`,
+        inputSize: file.size,
+        outputSize: res.blob.size,
+        status: "done",
+      });
     } catch (err) {
       if (isCancelledRef.current) return;
       console.error("Conversion error:", err);
       setErrorMsg(err instanceof Error ? err.message : "Font compilation failed");
       setIsConverting(false);
     }
-  }, [font, file, metadata, targetFormat, options]);
+  }, [font, file, metadata, targetFormat, options, onConversionComplete]);
 
   const hasFile = !!file;
   const targetMeta = FONT_FORMATS[targetFormat];

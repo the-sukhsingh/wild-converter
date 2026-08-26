@@ -19,14 +19,24 @@ import { VideoFormatSelector } from "./video-format-selector";
 import { VideoOptionsPanel } from "./video-options";
 import { VideoActionBar } from "./video-action-bar";
 
+interface OnConversionCompletePayload {
+  inputFileName: string;
+  outputFileName: string;
+  inputSize: number;
+  outputSize: number;
+  status: "done" | "error";
+}
+
 interface VideoConverterProps {
   initialFile?: File | null;
   onClearInitialFile?: () => void;
+  onConversionComplete?: (payload: OnConversionCompletePayload) => void;
 }
 
 export function VideoConverter({
   initialFile,
   onClearInitialFile,
+  onConversionComplete,
 }: VideoConverterProps = {}) {
   const [file, setFile] = useState<File | null>(initialFile || null);
   const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
@@ -166,6 +176,13 @@ export function VideoConverter({
       setConversionResult(res);
       setConversionProgress(100);
       setIsConverting(false);
+      onConversionComplete?.({
+        inputFileName: file.name,
+        outputFileName: `${file.name.replace(/\.[^/.]+$/, "")}.${VIDEO_FORMATS[targetFormat]?.extension || "mp4"}`,
+        inputSize: file.size,
+        outputSize: res.blob.size,
+        status: "done",
+      });
     } catch (err) {
       if (controller.signal.aborted) {
         setIsConverting(false);
@@ -177,7 +194,7 @@ export function VideoConverter({
       setErrorMsg(err instanceof Error ? err.message : "Video conversion failed");
       setIsConverting(false);
     }
-  }, [videoElement, file, targetFormat, options]);
+  }, [videoElement, file, targetFormat, options, onConversionComplete]);
 
   const hasFile = !!file;
   const targetMeta = VIDEO_FORMATS[targetFormat];

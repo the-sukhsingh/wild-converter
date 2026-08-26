@@ -21,14 +21,24 @@ import { DocumentOptionsPanel } from "./document-options";
 import { DocumentActionBar } from "./document-action-bar";
 import { DocumentPreviewModal } from "./document-preview-modal";
 
+interface OnConversionCompletePayload {
+  inputFileName: string;
+  outputFileName: string;
+  inputSize: number;
+  outputSize: number;
+  status: "done" | "error";
+}
+
 interface DocumentConverterProps {
   initialFile?: File | null;
   onClearInitialFile?: () => void;
+  onConversionComplete?: (payload: OnConversionCompletePayload) => void;
 }
 
 export function DocumentConverter({
   initialFile,
   onClearInitialFile,
+  onConversionComplete,
 }: DocumentConverterProps = {}) {
   const [file, setFile] = useState<File | null>(initialFile || null);
   const [inputFormat, setInputFormat] = useState<DocumentFormat | null>(null);
@@ -198,13 +208,20 @@ export function DocumentConverter({
       setConversionResult(result);
       setConversionProgress(100);
       setIsConverting(false);
+      onConversionComplete?.({
+        inputFileName: file.name,
+        outputFileName: buildDocumentOutputName(file.name, targetFormat),
+        inputSize: file.size,
+        outputSize: result.blob.size,
+        status: "done",
+      });
     } catch (err) {
       if (isCancelledRef.current) return;
       console.error("Conversion error:", err);
       setErrorMsg(err instanceof Error ? err.message : "Document conversion failed");
       setIsConverting(false);
     }
-  }, [file, targetFormat, options, probedResult]);
+  }, [file, targetFormat, options, probedResult, onConversionComplete]);
 
   const hasFile = !!file;
   const outputName = file ? buildDocumentOutputName(file.name, targetFormat) : "";
