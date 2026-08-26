@@ -78,14 +78,25 @@ export function FontConverter({
       }));
     } catch (err) {
       console.error("Font parse error:", err);
+      setFile(null);
+      setFont(null);
+      setMetadata(null);
       setErrorMsg(err instanceof Error ? err.message : "Failed to parse OpenType font file");
     }
   }, []);
 
   // Sync initialFile
   useEffect(() => {
-    if (initialFile && initialFile !== file) {
-      handleFileSelect(initialFile);
+    if (initialFile) {
+      if (initialFile !== file) {
+        handleFileSelect(initialFile);
+      }
+    } else if (file) {
+      setFile(null);
+      setFont(null);
+      setMetadata(null);
+      setConversionResult(null);
+      setErrorMsg(null);
     }
   }, [initialFile, file, handleFileSelect]);
 
@@ -172,7 +183,7 @@ export function FontConverter({
     }
   }, [font, file, metadata, targetFormat, options, onConversionComplete]);
 
-  const hasFile = !!file;
+  const isReady = Boolean(file && metadata);
   const targetMeta = FONT_FORMATS[targetFormat];
   const outputName = file
     ? `${file.name.replace(/\.[^/.]+$/, "")}.${targetMeta?.extension || "woff2"}`
@@ -188,19 +199,24 @@ export function FontConverter({
       {/* State 1: Dropzone */}
       <div
         className={`absolute inset-0 px-4 md:px-8 py-6 flex flex-col justify-center transition-opacity duration-200 ${
-          !hasFile ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          !isReady ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
-        aria-hidden={hasFile}
+        aria-hidden={isReady}
       >
         <FontDropzone onFileSelect={handleFileSelect} />
+        {errorMsg && !isReady && (
+          <div className="mt-4 p-3 rounded-lg bg-destructive/10 text-destructive text-xs font-mono max-w-xl">
+            {errorMsg}
+          </div>
+        )}
       </div>
 
       {/* State 2: Active Workspace */}
       <div
         className={`absolute inset-0 px-4 md:px-8 py-6 flex flex-col justify-between transition-opacity duration-200 ${
-          hasFile ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          isReady ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
-        aria-hidden={!hasFile}
+        aria-hidden={!isReady}
       >
         {file && metadata && (
           <div className="h-full flex flex-col justify-between gap-4">

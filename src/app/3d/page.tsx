@@ -1,20 +1,10 @@
 "use client";
 
-import dynamic from "next/dynamic";
+import { useMemo, useCallback } from "react";
+import { ThreeDConverter } from "@/components/three-d-converter";
 import { useDroppedFile } from "@/lib/dropped-file-context";
 import { useConversionHistory } from "@/lib/conversion-history";
-import { useCallback } from "react";
-
-const LoadingWorkspace = () => (
-  <div className="flex-1 flex items-center justify-center p-8 text-xs font-mono text-[var(--muted-foreground)]">
-    initializing converter workspace...
-  </div>
-);
-
-const ThreeDConverter = dynamic(
-  () => import("@/components/three-d-converter").then((m) => m.ThreeDConverter),
-  { ssr: false, loading: LoadingWorkspace }
-);
+import { isCategorySupported } from "@/lib/supported-formats";
 
 interface ConverterPayload {
   inputFileName: string;
@@ -28,6 +18,11 @@ export default function ThreeDPage() {
   const { droppedFile, clearDroppedFile } = useDroppedFile();
   const { addRecord } = useConversionHistory();
 
+  const validInitialFile = useMemo(() => {
+    if (!droppedFile) return null;
+    return isCategorySupported("3d", droppedFile) ? droppedFile : null;
+  }, [droppedFile]);
+
   const handleConversionComplete = useCallback(
     (payload: ConverterPayload) => {
       addRecord({ ...payload, category: "3d" });
@@ -37,7 +32,7 @@ export default function ThreeDPage() {
 
   return (
     <ThreeDConverter
-      initialFile={droppedFile}
+      initialFile={validInitialFile}
       onClearInitialFile={clearDroppedFile}
       onConversionComplete={handleConversionComplete}
     />

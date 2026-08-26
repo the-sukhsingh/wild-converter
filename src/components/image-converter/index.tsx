@@ -72,8 +72,20 @@ export function ImageConverter({ initialFile, onClearInitialFile, onConversionCo
 
   // Sync initialFile
   useEffect(() => {
-    if (initialFile && initialFile !== file) {
-      handleFileSelect(initialFile);
+    if (initialFile) {
+      if (initialFile !== file) {
+        handleFileSelect(initialFile);
+      }
+    } else if (file) {
+      setFile(null);
+      setInputFormat(null);
+      setImageDimensions(null);
+      setExactProbedSize(null);
+      setProbedBlob(null);
+      setResultBlob(null);
+      setResultUrl(null);
+      setState("idle");
+      setErrorMsg(null);
     }
   }, [initialFile, file, handleFileSelect]);
 

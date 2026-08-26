@@ -91,8 +91,18 @@ export function DocumentConverter({
 
   // Sync initialFile if passed from parent
   useEffect(() => {
-    if (initialFile && initialFile !== file) {
-      handleFileSelect(initialFile);
+    if (initialFile) {
+      if (initialFile !== file) {
+        handleFileSelect(initialFile);
+      }
+    } else if (file) {
+      setFile(null);
+      setInputFormat(null);
+      setDocumentIR(null);
+      setExactProbedSize(null);
+      setProbedResult(null);
+      setConversionResult(null);
+      setErrorMsg(null);
     }
   }, [initialFile, file, handleFileSelect]);
 

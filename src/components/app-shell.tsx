@@ -107,7 +107,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* ─── Header ───────────────────────────────────────────────── */}
       <header className="shrink-0 h-14 border-b border-[var(--border)] bg-[var(--background)] z-50">
         <div className="w-full max-w-5xl h-full mx-auto px-4 md:px-8 flex items-center justify-between gap-4">
-          <Link href="/images" className="flex items-baseline gap-1.5 shrink-0 select-none">
+          <Link href="/" className="flex items-baseline gap-1.5 shrink-0 select-none">
             <span className="font-sans font-semibold text-base tracking-tight text-[var(--foreground)]">
               wild
             </span>
@@ -124,9 +124,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Link
                   key={cat.id}
                   href={cat.href}
-                  className={`h-8 px-2.5 rounded-md text-xs font-mono font-medium transition-all whitespace-nowrap ${
+                  className={`flex items-center justify-center py-2 px-2.5 rounded-md text-xs font-mono font-medium transition-colors whitespace-nowrap ${
                     isActive
-                      ? "bg-[var(--card)] text-[var(--foreground)] shadow-xs"
+                      ? "bg-[var(--card)] text-[var(--foreground)]"
                       : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]/40"
                   }`}
                 >
