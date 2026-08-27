@@ -8,13 +8,16 @@ import {
   resolveOutputFilename,
 } from "@/lib/batch-converter/batch-runner";
 import { createZipArchive, downloadBlob } from "@/lib/batch-converter/zip-builder";
+import { useConversionHistory } from "@/lib/conversion-history";
 import { BatchRow } from "./batch-row";
 import { BatchToolbar } from "./batch-toolbar";
 import { BatchItemOptionsModal } from "./batch-item-options-modal";
+import { BatchPreviewModal } from "./batch-preview-modal";
 import { ImageToPdfWorkspace } from "./image-to-pdf-workspace";
 import { PdfToImageWorkspace } from "./pdf-to-image-workspace";
+import { useBatchKeyboard } from "./use-batch-keyboard";
 import { UploadDropzone } from "@/components/image-converter/upload-dropzone";
-import { Search, Plus, UploadCloud, Layers } from "lucide-react";
+import { Search, Layers, Keyboard } from "lucide-react";
 
 interface BatchTableProps {
   initialFiles?: File[];
@@ -31,6 +34,11 @@ export function BatchTable({
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [activeOptionsItem, setActiveOptionsItem] = useState<BatchItem | null>(null);
+  const [previewItem, setPreviewItem] = useState<BatchItem | null>(null);
+
+  // Feature 2: Drag-to-reorder state
+  const [dragFromIndex, setDragFromIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   // Sub-workspaces modes
   const [isImageToPdfOpen, setIsImageToPdfOpen] = useState(false);
@@ -41,6 +49,7 @@ export function BatchTable({
   const [isZipping, setIsZipping] = useState(false);
   const [zipProgress, setZipProgress] = useState(0);
   const isCancelledRef = useRef(false);
+  const { addRecord } = useConversionHistory();
 
   // Load initial files
   useEffect(() => {
@@ -121,7 +130,6 @@ export function BatchTable({
   const handleApplyGlobalFormat = useCallback((format: string) => {
     setItems((prev) =>
       prev.map((item) => {
-        // Check if format is valid for item's category
         const outputName = resolveOutputFilename(item.file.name, format, item.category);
         return {
           ...item,
@@ -175,6 +183,15 @@ export function BatchTable({
             : i
         )
       );
+      // Record in conversion history
+      addRecord({
+        category: item.category as any,
+        inputFileName: item.name,
+        outputFileName: outputName,
+        inputSize: item.size,
+        outputSize: blob.size,
+        status: "done",
+      });
     } catch (err) {
       console.error("Batch single conversion failed:", err);
       setItems((prev) =>
@@ -206,10 +223,8 @@ export function BatchTable({
     setIsConvertingAll(true);
     isCancelledRef.current = false;
 
-    // Queue processor with concurrency limit of 2
     const queue = [...pendingItems];
     const concurrency = 2;
-    let activeWorkers = 0;
 
     const runWorker = async () => {
       while (queue.length > 0 && !isCancelledRef.current) {
@@ -247,6 +262,48 @@ export function BatchTable({
       setIsZipping(false);
     }
   }, [items]);
+
+  // Feature 2: Drag-to-reorder handlers
+  const handleDragStart = useCallback((index: number) => {
+    setDragFromIndex(index);
+  }, []);
+
+  const handleDragOver = useCallback((index: number) => {
+    setDragOverIndex(index);
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    if (dragFromIndex !== null && dragOverIndex !== null && dragFromIndex !== dragOverIndex) {
+      setItems((prev) => {
+        const next = [...prev];
+        const [moved] = next.splice(dragFromIndex, 1);
+        next.splice(dragOverIndex, 0, moved);
+        return next;
+      });
+    }
+    setDragFromIndex(null);
+    setDragOverIndex(null);
+  }, [dragFromIndex, dragOverIndex]);
+
+  // Feature 5: Keyboard shortcuts
+  const handleCloseModal = useCallback(() => {
+    setActiveOptionsItem(null);
+    setPreviewItem(null);
+  }, []);
+
+  const hasIdleItems = items.some((i) => i.status === "idle" || i.status === "error");
+  const hasDoneItems = items.some((i) => i.status === "done");
+
+  useBatchKeyboard({
+    onConvertAll: handleConvertAll,
+    onDownloadZip: handleDownloadZip,
+    onClearAll: handleClearAll,
+    onCloseModal: handleCloseModal,
+    isConvertingAll,
+    hasIdleItems,
+    hasDoneItems,
+    hasItems: items.length > 0,
+  });
 
   // Filtered items
   const filteredItems = items.filter((item) => {
@@ -350,16 +407,22 @@ export function BatchTable({
 
         {/* Scrollable File List Rows */}
         <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1">
-          {filteredItems.map((item) => (
+          {filteredItems.map((item, idx) => (
             <BatchRow
               key={item.id}
               item={item}
+              index={idx}
+              isDragging={dragFromIndex === idx}
               onUpdateTargetFormat={handleUpdateTargetFormat}
               onOpenOptions={(it) => setActiveOptionsItem(it)}
               onConvertSingle={handleConvertSingle}
               onDownloadSingle={handleDownloadSingle}
               onRemove={handleRemove}
               onRetry={handleConvertSingle}
+              onPreview={(it) => setPreviewItem(it)}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDragEnd={handleDragEnd}
             />
           ))}
 
@@ -371,6 +434,16 @@ export function BatchTable({
             </div>
           )}
         </div>
+
+        {/* Feature 5: Keyboard shortcut hints */}
+        {items.length > 0 && (
+          <div className="shrink-0 flex items-center gap-3 pt-1">
+            <Keyboard className="w-3 h-3 text-[var(--border)] shrink-0" />
+            <span className="font-mono text-[10px] text-[var(--border)] select-none">
+              Ctrl+Enter convert all · Ctrl+D download zip · Esc close
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Item Options Modal */}
@@ -379,6 +452,15 @@ export function BatchTable({
         isOpen={Boolean(activeOptionsItem)}
         onClose={() => setActiveOptionsItem(null)}
         onSaveOptions={handleSaveOptions}
+      />
+
+      {/* Feature 3: Preview Modal */}
+      <BatchPreviewModal
+        item={previewItem}
+        isOpen={Boolean(previewItem)}
+        onClose={() => setPreviewItem(null)}
+        onConvert={handleConvertSingle}
+        onDownload={handleDownloadSingle}
       />
     </div>
   );

@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, type DragEvent, useState } from "react";
+import { useCallback, useEffect, type DragEvent, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useDroppedFile } from "@/lib/dropped-file-context";
+import { HistoryPanel } from "@/components/history-panel";
+import { History } from "lucide-react";
 
 import { isAudioFile } from "@/lib/audio-format-utils";
 import { isVideoFile } from "@/lib/video-format-utils";
@@ -42,16 +44,28 @@ const CATEGORIES: CategoryTab[] = [
   { id: "archive",   label: "Archives", href: "/archive",   engineName: "deflate/tar streaming compressor" },
 ];
 
+// Document extensions that must be checked BEFORE vector (PDF is in VECTOR_FORMATS but belongs to documents)
+const DOCUMENT_EXTS = new Set(["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "rtf", "md", "odt", "ods", "odp", "csv", "html", "htm"]);
+const DOCUMENT_MIMES = ["application/pdf", "application/msword", "application/vnd.ms-excel", "application/vnd.ms-powerpoint", "text/plain", "text/csv", "text/html", "text/markdown"];
+
 function detectCategoryFromFile(file: File): ConverterCategory {
   const ext = file.name.toLowerCase().split(".").pop() || "";
+  const mime = file.type.toLowerCase();
 
-  if (isVectorFile(file) || ext === "svg" || ext === "eps" || ext === "ai" || ext === "dxf") return "vector";
-  if (isThreeDFile(file) || ext === "stl" || ext === "obj" || ext === "glb" || ext === "gltf" || ext === "ply" || ext === "3mf") return "3d";
+  // Documents must be checked first — PDF extension exists in VECTOR_FORMATS but is a document
+  if (DOCUMENT_EXTS.has(ext)) return "documents";
+  if (DOCUMENT_MIMES.some((m) => mime.startsWith(m))) return "documents";
+  if (mime.includes("officedocument") || mime.includes("opendocument")) return "documents";
+
   if (isFontFile(file) || ext === "ttf" || ext === "otf" || ext === "woff" || ext === "woff2" || ext === "eot") return "fonts";
   if (isArchiveFile(file) || ext === "zip" || ext === "tar" || ext === "gz" || ext === "tgz" || ext === "7z" || ext === "rar") return "archive";
-  if (isAudioFile(file) || file.type.startsWith("audio/")) return "audio";
-  if (isVideoFile(file) || file.type.startsWith("video/")) return "video";
-  if (detectFormat(file) !== null || file.type.startsWith("image/")) return "images";
+  if (isAudioFile(file) || mime.startsWith("audio/")) return "audio";
+  if (isVideoFile(file) || mime.startsWith("video/")) return "video";
+  // Check images before vector (SVG has image/ MIME type)
+  if (detectFormat(file) !== null || (mime.startsWith("image/") && !mime.includes("svg"))) return "images";
+  if (isVectorFile(file) || ext === "svg" || ext === "eps" || ext === "ai" || ext === "dxf" || ext === "cdr") return "vector";
+  if (isThreeDFile(file) || ext === "stl" || ext === "obj" || ext === "glb" || ext === "gltf" || ext === "ply" || ext === "3mf") return "3d";
+  if (mime.startsWith("image/")) return "images";
   return "documents";
 }
 
@@ -60,6 +74,56 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { setDroppedFiles } = useDroppedFile();
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+
+  // ── Feature 1: Clipboard paste ──────────────────────────────────────────
+  useEffect(() => {
+    async function handlePaste(e: ClipboardEvent) {
+      // Ignore if user is typing in an input
+      const target = e.target as HTMLElement;
+      const tag = target.tagName.toLowerCase();
+      if (tag === "input" || tag === "textarea" || target.isContentEditable) return;
+
+      const items = Array.from(e.clipboardData?.items ?? []);
+
+      // Collect all file-kind items from clipboard
+      const fileItems = items.filter((item) => item.kind === "file");
+      if (fileItems.length === 0) return;
+
+      e.preventDefault();
+
+      const files = fileItems
+        .map((item) => {
+          const f = item.getAsFile();
+          if (!f) return null;
+
+          // If the file has no name/extension (raw OS clipboard data like a screenshot),
+          // synthesize a filename from its MIME type so detection works correctly.
+          if (!f.name || f.name === "image" || !f.name.includes(".")) {
+            const ext = f.type.split("/")[1]?.replace(/[^a-z0-9]/gi, "") || "bin";
+            return new File([f], `pasted-${Date.now()}.${ext}`, { type: f.type });
+          }
+          return f;
+        })
+        .filter((f): f is File => f !== null);
+
+      if (files.length === 0) return;
+
+      setDroppedFiles(files);
+      const firstCat = detectCategoryFromFile(files[0]);
+      const allSame = files.every((f) => detectCategoryFromFile(f) === firstCat);
+
+      if (allSame) {
+        const cat = CATEGORIES.find((c) => c.id === firstCat)!;
+        router.push(cat.href);
+      } else {
+        router.push("/");
+      }
+    }
+
+    window.addEventListener("paste", handlePaste);
+    return () => window.removeEventListener("paste", handlePaste);
+  }, [router, setDroppedFiles]);
 
   const handleGlobalDragOver = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -125,7 +189,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </span>
           </Link>
 
-          <nav className="flex items-center gap-0.5 overflow-x-auto no-scrollbar py-1">
+          <nav className="flex items-center gap-0.5 overflow-x-auto no-scrollbar py-1 px-1">
             {CATEGORIES.map((cat) => {
               const isActive =
                 pathname === cat.href || pathname.startsWith(cat.href + "/");
@@ -145,7 +209,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             })}
           </nav>
 
-          <div className="shrink-0 flex items-center">
+          <div className="shrink-0 flex items-center gap-1">
+            {/* History Button */}
+            <button
+              type="button"
+              id="history-panel-toggle"
+              onClick={() => setIsHistoryOpen((v) => !v)}
+              title="Conversion history"
+              aria-label="Open conversion history"
+              className={`p-2 rounded-md transition-colors ${
+                isHistoryOpen
+                  ? "bg-[var(--card)] text-[var(--foreground)]"
+                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]/40"
+              }`}
+            >
+              <History className="w-4 h-4" />
+            </button>
             <ThemeToggle />
           </div>
         </div>
@@ -163,6 +242,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <span className="hidden sm:inline shrink-0">100% private · zero server uploads</span>
         </div>
       </footer>
+
+      {/* ─── History Panel ────────────────────────────────────────── */}
+      <HistoryPanel isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} />
     </div>
   );
 }
