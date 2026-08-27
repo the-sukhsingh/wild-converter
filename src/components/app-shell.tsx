@@ -58,7 +58,7 @@ function detectCategoryFromFile(file: File): ConverterCategory {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { setDroppedFile } = useDroppedFile();
+  const { setDroppedFiles } = useDroppedFile();
   const [isDragOver, setIsDragOver] = useState(false);
 
   const handleGlobalDragOver = (e: DragEvent<HTMLDivElement>) => {
@@ -80,20 +80,29 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       setIsDragOver(false);
 
       if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        const file = e.dataTransfer.files[0];
-        const category = detectCategoryFromFile(file);
-        const target = CATEGORIES.find((c) => c.id === category)!;
-        setDroppedFile(file);
-        router.push(target.href);
+        const files = Array.from(e.dataTransfer.files);
+        setDroppedFiles(files);
+
+        // If all files belong to a specific category, route there directly
+        const firstCat = detectCategoryFromFile(files[0]);
+        const allSameCat = files.every((f) => detectCategoryFromFile(f) === firstCat);
+
+        if (allSameCat) {
+          const target = CATEGORIES.find((c) => c.id === firstCat)!;
+          router.push(target.href);
+        } else {
+          // If mixed files, route to homepage batch table
+          router.push("/");
+        }
       }
     },
-    [router, setDroppedFile]
+    [router, setDroppedFiles]
   );
 
   const activeCategory = CATEGORIES.find(
     (c) => pathname === c.href || pathname.startsWith(c.href + "/")
   );
-  const engineName = activeCategory?.engineName ?? "client-side wasm engine";
+  const engineName = activeCategory?.engineName ?? "pure client-side wasm engine";
 
   return (
     <div

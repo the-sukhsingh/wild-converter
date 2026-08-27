@@ -15,13 +15,19 @@ interface ConverterPayload {
 }
 
 export default function ImagesPage() {
-  const { droppedFile, clearDroppedFile } = useDroppedFile();
+  const { droppedFile, droppedFiles, clearDroppedFiles } = useDroppedFile();
   const { addRecord } = useConversionHistory();
 
+  const validInitialFiles = useMemo(() => {
+    if (!droppedFiles || droppedFiles.length === 0) return [];
+    return droppedFiles.filter((f) => isCategorySupported("images", f));
+  }, [droppedFiles]);
+
   const validInitialFile = useMemo(() => {
+    if (validInitialFiles.length > 0) return validInitialFiles[0];
     if (!droppedFile) return null;
     return isCategorySupported("images", droppedFile) ? droppedFile : null;
-  }, [droppedFile]);
+  }, [validInitialFiles, droppedFile]);
 
   const handleConversionComplete = useCallback(
     (payload: ConverterPayload) => {
@@ -33,7 +39,8 @@ export default function ImagesPage() {
   return (
     <ImageConverter
       initialFile={validInitialFile}
-      onClearInitialFile={clearDroppedFile}
+      initialFiles={validInitialFiles}
+      onClearInitialFile={clearDroppedFiles}
       onConversionComplete={handleConversionComplete}
     />
   );

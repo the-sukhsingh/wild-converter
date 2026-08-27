@@ -15,13 +15,19 @@ interface ConverterPayload {
 }
 
 export default function AudioPage() {
-  const { droppedFile, clearDroppedFile } = useDroppedFile();
+  const { droppedFile, droppedFiles, clearDroppedFiles } = useDroppedFile();
   const { addRecord } = useConversionHistory();
 
+  const validInitialFiles = useMemo(() => {
+    if (!droppedFiles || droppedFiles.length === 0) return [];
+    return droppedFiles.filter((f) => isCategorySupported("audio", f));
+  }, [droppedFiles]);
+
   const validInitialFile = useMemo(() => {
+    if (validInitialFiles.length > 0) return validInitialFiles[0];
     if (!droppedFile) return null;
     return isCategorySupported("audio", droppedFile) ? droppedFile : null;
-  }, [droppedFile]);
+  }, [validInitialFiles, droppedFile]);
 
   const handleConversionComplete = useCallback(
     (payload: ConverterPayload) => {
@@ -33,7 +39,8 @@ export default function AudioPage() {
   return (
     <AudioConverter
       initialFile={validInitialFile}
-      onClearInitialFile={clearDroppedFile}
+      initialFiles={validInitialFiles}
+      onClearInitialFile={clearDroppedFiles}
       onConversionComplete={handleConversionComplete}
     />
   );

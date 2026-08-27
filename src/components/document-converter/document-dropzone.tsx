@@ -4,30 +4,45 @@ import { useCallback, useRef, useState } from "react";
 import { UploadCloud } from "lucide-react";
 
 interface DocumentDropzoneProps {
-  onFileSelect: (file: File) => void;
+  onFileSelect?: (file: File) => void;
+  onFilesSelect?: (files: File[]) => void;
 }
 
-export function DocumentDropzone({ onFileSelect }: DocumentDropzoneProps) {
+export function DocumentDropzone({ onFileSelect, onFilesSelect }: DocumentDropzoneProps) {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFiles = useCallback(
+    (files: FileList | null) => {
+      if (!files || files.length === 0) return;
+      const fileArr = Array.from(files);
+      if (fileArr.length > 1 && onFilesSelect) {
+        onFilesSelect(fileArr);
+      } else if (fileArr.length === 1) {
+        if (onFilesSelect) onFilesSelect(fileArr);
+        else if (onFileSelect) onFileSelect(fileArr[0]);
+      } else if (onFilesSelect) {
+        onFilesSelect(fileArr);
+      }
+    },
+    [onFileSelect, onFilesSelect]
+  );
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
       setIsDragging(false);
-      const f = e.dataTransfer.files?.[0];
-      if (f) onFileSelect(f);
+      handleFiles(e.dataTransfer.files);
     },
-    [onFileSelect]
+    [handleFiles]
   );
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const f = e.target.files?.[0];
-      if (f) onFileSelect(f);
+      handleFiles(e.target.files);
       if (fileInputRef.current) fileInputRef.current.value = "";
     },
-    [onFileSelect]
+    [handleFiles]
   );
 
   return (
@@ -37,7 +52,7 @@ export function DocumentDropzone({ onFileSelect }: DocumentDropzoneProps) {
           Convert documents
         </h1>
         <p className="text-sm md:text-base text-[var(--muted-foreground)] mt-2 max-w-lg leading-relaxed">
-          Client-side converter. No file uploads, no tracking, 100% private.
+          Batch convert docs, extract PDF pages to images & compile spreadsheets. 100% private.
         </p>
       </div>
 
@@ -67,10 +82,10 @@ export function DocumentDropzone({ onFileSelect }: DocumentDropzoneProps) {
           </div>
           <div>
             <div className="text-sm md:text-base font-medium text-[var(--foreground)]">
-              Drop a document here, or choose file
+              Drop documents here, or choose files
             </div>
             <div className="text-xs font-mono text-[var(--muted-foreground)] mt-0.5">
-              DOCX · PDF · XLSX · CSV · MD · HTML · RTF · ODT · PPTX · TEX · TXT
+              Supports multiple files · DOCX · PDF · XLSX · CSV · MD · HTML · RTF · ODT · PPTX · TEX · TXT
             </div>
           </div>
         </div>
@@ -78,6 +93,7 @@ export function DocumentDropzone({ onFileSelect }: DocumentDropzoneProps) {
         <input
           ref={fileInputRef}
           type="file"
+          multiple
           accept=".doc,.docx,.pdf,.txt,.rtf,.html,.htm,.md,.markdown,.odt,.org,.rst,.tex,.wp,.wps,.xls,.xlsx,.csv,.ods,.odp,.ppt,.pptx"
           className="hidden"
           onChange={handleChange}

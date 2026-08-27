@@ -19,6 +19,9 @@ import { FileHeader } from "./file-header";
 import { FormatSelector } from "./format-selector";
 import { ConversionOptionsPanel } from "./conversion-options";
 import { ActionBar } from "./action-bar";
+import { BatchTable } from "@/components/batch-converter/batch-table";
+import { ImageToPdfWorkspace } from "@/components/batch-converter/image-to-pdf-workspace";
+import { Layers, Images } from "lucide-react";
 
 type ConvertState = "idle" | "converting" | "done" | "error";
 
@@ -32,12 +35,27 @@ interface OnConversionCompletePayload {
 
 interface ImageConverterProps {
   initialFile?: File | null;
+  initialFiles?: File[];
   onClearInitialFile?: () => void;
   onConversionComplete?: (payload: OnConversionCompletePayload) => void;
 }
 
-export function ImageConverter({ initialFile, onClearInitialFile, onConversionComplete }: ImageConverterProps = {}) {
-  const [file, setFile] = useState<File | null>(initialFile || null);
+export function ImageConverter({
+  initialFile,
+  initialFiles,
+  onClearInitialFile,
+  onConversionComplete,
+}: ImageConverterProps = {}) {
+  // Batch state
+  const [batchFiles, setBatchFiles] = useState<File[]>(
+    initialFiles && initialFiles.length > 1 ? initialFiles : []
+  );
+  const [isImageToPdfMode, setIsImageToPdfMode] = useState(false);
+
+  // Single file state
+  const [file, setFile] = useState<File | null>(
+    initialFiles && initialFiles.length === 1 ? initialFiles[0] : initialFile || null
+  );
   const [inputFormat, setInputFormat] = useState<ImageFormat | null>(null);
   const [targetFormat, setTargetFormat] = useState<ImageFormat>("webp");
   const [searchQuery, setSearchQuery] = useState("");
@@ -63,6 +81,7 @@ export function ImageConverter({ initialFile, onClearInitialFile, onConversionCo
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleFileSelect = useCallback((f: File) => {
+    setBatchFiles([]);
     setFile(f);
     const detected = detectFormat(f);
     setInputFormat(detected);
@@ -70,24 +89,26 @@ export function ImageConverter({ initialFile, onClearInitialFile, onConversionCo
     setSearchQuery("");
   }, []);
 
-  // Sync initialFile
-  useEffect(() => {
-    if (initialFile) {
-      if (initialFile !== file) {
-        handleFileSelect(initialFile);
-      }
-    } else if (file) {
+  const handleFilesSelect = useCallback((files: File[]) => {
+    if (files.length > 1) {
+      setBatchFiles(files);
       setFile(null);
-      setInputFormat(null);
-      setImageDimensions(null);
-      setExactProbedSize(null);
-      setProbedBlob(null);
-      setResultBlob(null);
-      setResultUrl(null);
-      setState("idle");
-      setErrorMsg(null);
+    } else if (files.length === 1) {
+      handleFileSelect(files[0]);
     }
-  }, [initialFile, file, handleFileSelect]);
+  }, [handleFileSelect]);
+
+  // Sync initialFiles or initialFile from props
+  useEffect(() => {
+    if (initialFiles && initialFiles.length > 1) {
+      setBatchFiles(initialFiles);
+      setFile(null);
+    } else if (initialFiles && initialFiles.length === 1) {
+      handleFileSelect(initialFiles[0]);
+    } else if (initialFile) {
+      handleFileSelect(initialFile);
+    }
+  }, [initialFile, initialFiles, handleFileSelect]);
 
   // Read dimensions when file changes
   useEffect(() => {
@@ -167,6 +188,7 @@ export function ImageConverter({ initialFile, onClearInitialFile, onConversionCo
   const handleRemove = useCallback(() => {
     handleCancel();
     setFile(null);
+    setBatchFiles([]);
     setInputFormat(null);
     setImageDimensions(null);
     setExactProbedSize(null);
@@ -222,6 +244,28 @@ export function ImageConverter({ initialFile, onClearInitialFile, onConversionCo
     return Math.round(((exactProbedSize - file.size) / file.size) * 100);
   }, [exactProbedSize, file?.size]);
 
+  // If in Image-to-PDF workspace mode
+  if (isImageToPdfMode) {
+    const imagesToPass = batchFiles.length > 0 ? batchFiles : file ? [file] : [];
+    return (
+      <ImageToPdfWorkspace
+        initialFiles={imagesToPass}
+        onBack={() => setIsImageToPdfMode(false)}
+      />
+    );
+  }
+
+  // If multiple files are uploaded, use the BatchTable
+  if (batchFiles.length > 0) {
+    return (
+      <BatchTable
+        initialFiles={batchFiles}
+        onClearInitialFiles={handleRemove}
+        defaultCategory="images"
+      />
+    );
+  }
+
   return (
     <div className="relative flex-1 w-full max-w-5xl mx-auto px-4 md:px-8 overflow-hidden">
       {/* State 1: Upload / Dropzone */}
@@ -231,7 +275,10 @@ export function ImageConverter({ initialFile, onClearInitialFile, onConversionCo
         }`}
         aria-hidden={hasFile}
       >
-        <UploadDropzone onFileSelect={handleFileSelect} />
+        <UploadDropzone
+          onFileSelect={handleFileSelect}
+          onFilesSelect={handleFilesSelect}
+        />
       </div>
 
       {/* State 2: Active Workspace */}
@@ -244,13 +291,23 @@ export function ImageConverter({ initialFile, onClearInitialFile, onConversionCo
       >
         {file && (
           <div className="h-full flex flex-col justify-between gap-4">
-            {/* File Info Header */}
-            <FileHeader
-              file={file}
-              inputFormat={inputFormat}
-              dimensions={imageDimensions}
-              onRemove={handleRemove}
-            />
+            {/* Top Quick Actions Bar (e.g. Image to PDF Reorder) */}
+            <div className="flex items-center justify-between border-b border-[var(--border)]/40 pb-2">
+              <FileHeader
+                file={file}
+                inputFormat={inputFormat}
+                dimensions={imageDimensions}
+                onRemove={handleRemove}
+              />
+              <button
+                type="button"
+                onClick={() => setIsImageToPdfMode(true)}
+                className="shrink-0 px-2.5 py-1 text-xs font-mono font-medium rounded-md border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--muted)] text-[var(--foreground)] transition-colors flex items-center gap-1.5 ml-2"
+              >
+                <Images className="w-3.5 h-3.5 text-emerald-500" />
+                <span>Image to PDF (Reorder)</span>
+              </button>
+            </div>
 
             {/* Searchable Format Selector */}
             <FormatSelector

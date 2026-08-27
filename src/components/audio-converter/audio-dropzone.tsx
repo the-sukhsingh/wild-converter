@@ -5,32 +5,45 @@ import { UploadCloud } from "lucide-react";
 import { isAudioFile } from "@/lib/audio-format-utils";
 
 interface AudioDropzoneProps {
-  onFileSelect: (file: File) => void;
+  onFileSelect?: (file: File) => void;
+  onFilesSelect?: (files: File[]) => void;
 }
 
-export function AudioDropzone({ onFileSelect }: AudioDropzoneProps) {
+export function AudioDropzone({ onFileSelect, onFilesSelect }: AudioDropzoneProps) {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFiles = useCallback(
+    (files: FileList | null) => {
+      if (!files || files.length === 0) return;
+      const fileArr = Array.from(files);
+      if (fileArr.length > 1 && onFilesSelect) {
+        onFilesSelect(fileArr);
+      } else if (fileArr.length === 1) {
+        if (onFilesSelect) onFilesSelect(fileArr);
+        else if (onFileSelect) onFileSelect(fileArr[0]);
+      } else if (onFilesSelect) {
+        onFilesSelect(fileArr);
+      }
+    },
+    [onFileSelect, onFilesSelect]
+  );
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
       setIsDragging(false);
-      const f = e.dataTransfer.files?.[0];
-      if (f && (isAudioFile(f) || f.type.startsWith("audio/"))) {
-        onFileSelect(f);
-      }
+      handleFiles(e.dataTransfer.files);
     },
-    [onFileSelect]
+    [handleFiles]
   );
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const f = e.target.files?.[0];
-      if (f) onFileSelect(f);
+      handleFiles(e.target.files);
       if (fileInputRef.current) fileInputRef.current.value = "";
     },
-    [onFileSelect]
+    [handleFiles]
   );
 
   return (
@@ -40,7 +53,7 @@ export function AudioDropzone({ onFileSelect }: AudioDropzoneProps) {
           Convert audio
         </h1>
         <p className="text-sm md:text-base text-[var(--muted-foreground)] mt-2 max-w-lg leading-relaxed">
-          Client-side converter. No file uploads, no tracking, 100% private.
+          Batch convert & transcode audio files with pure client-side DSP. 100% private.
         </p>
       </div>
 
@@ -70,10 +83,10 @@ export function AudioDropzone({ onFileSelect }: AudioDropzoneProps) {
           </div>
           <div>
             <div className="text-sm md:text-base font-medium text-[var(--foreground)]">
-              Drop an audio file here, or choose file
+              Drop audio files here, or choose files
             </div>
             <div className="text-xs font-mono text-[var(--muted-foreground)] mt-0.5">
-              MP3 · WAV · FLAC · OGG · AAC · M4A · OPUS · AIFF · AMR · AC3 · APE · WMA
+              Supports multiple files · MP3 · WAV · FLAC · OGG · AAC · M4A · OPUS · AIFF · AMR · AC3 · WMA
             </div>
           </div>
         </div>
@@ -81,6 +94,7 @@ export function AudioDropzone({ onFileSelect }: AudioDropzoneProps) {
         <input
           ref={fileInputRef}
           type="file"
+          multiple
           accept="audio/*,.mp3,.wav,.ogg,.flac,.aac,.m4a,.opus,.wma,.amr,.ac3,.ape,.ra,.rm,.spx,.tta,.wv,.dff,.dsf,.aiff,.webm"
           className="hidden"
           onChange={handleChange}

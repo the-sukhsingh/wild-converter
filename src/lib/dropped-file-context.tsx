@@ -10,25 +10,53 @@ import {
 
 interface DroppedFileContextValue {
   droppedFile: File | null;
+  droppedFiles: File[];
   setDroppedFile: (file: File | null) => void;
+  setDroppedFiles: (files: File[]) => void;
+  addDroppedFiles: (files: File[]) => void;
   clearDroppedFile: () => void;
+  clearDroppedFiles: () => void;
 }
 
 const DroppedFileContext = createContext<DroppedFileContextValue | null>(null);
 
 export function DroppedFileProvider({ children }: { children: ReactNode }) {
-  const [droppedFile, setDroppedFileState] = useState<File | null>(null);
+  const [droppedFiles, setDroppedFilesState] = useState<File[]>([]);
 
   const setDroppedFile = useCallback((file: File | null) => {
-    setDroppedFileState(file);
+    setDroppedFilesState(file ? [file] : []);
+  }, []);
+
+  const setDroppedFiles = useCallback((files: File[]) => {
+    setDroppedFilesState(files);
+  }, []);
+
+  const addDroppedFiles = useCallback((files: File[]) => {
+    setDroppedFilesState((prev) => [...prev, ...files]);
   }, []);
 
   const clearDroppedFile = useCallback(() => {
-    setDroppedFileState(null);
+    setDroppedFilesState([]);
   }, []);
 
+  const clearDroppedFiles = useCallback(() => {
+    setDroppedFilesState([]);
+  }, []);
+
+  const droppedFile = droppedFiles.length > 0 ? droppedFiles[0] : null;
+
   return (
-    <DroppedFileContext.Provider value={{ droppedFile, setDroppedFile, clearDroppedFile }}>
+    <DroppedFileContext.Provider
+      value={{
+        droppedFile,
+        droppedFiles,
+        setDroppedFile,
+        setDroppedFiles,
+        addDroppedFiles,
+        clearDroppedFile,
+        clearDroppedFiles,
+      }}
+    >
       {children}
     </DroppedFileContext.Provider>
   );

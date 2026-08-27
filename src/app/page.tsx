@@ -6,6 +6,7 @@
 import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDroppedFile } from "@/lib/dropped-file-context";
+import { BatchTable } from "@/components/batch-converter/batch-table";
 
 /* ── category detection ─────────────────────────────────────── */
 
@@ -50,14 +51,42 @@ function detect(file: File): Category {
 
 export default function Home() {
   const router = useRouter();
-  const { setDroppedFile } = useDroppedFile();
+  const { droppedFiles, setDroppedFiles, clearDroppedFiles } = useDroppedFile();
   const inputRef = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
 
-  const go = useCallback(
-    (file: File) => { setDroppedFile(file); router.push(ROUTES[detect(file)]); },
-    [router, setDroppedFile]
+  const handleFiles = useCallback(
+    (files: File[]) => {
+      if (files.length === 0) return;
+
+      if (files.length === 1) {
+        const file = files[0];
+        setDroppedFiles(files);
+        router.push(ROUTES[detect(file)]);
+      } else {
+        // Multiple files: check if all same category or mixed
+        const firstCat = detect(files[0]);
+        const allSame = files.every((f) => detect(f) === firstCat);
+        setDroppedFiles(files);
+
+        if (allSame) {
+          router.push(ROUTES[firstCat]);
+        }
+        // If mixed, staying on homepage with droppedFiles will render the BatchTable!
+      }
+    },
+    [router, setDroppedFiles]
   );
+
+  // If there are multiple files in context on the homepage, render the BatchTable directly
+  if (droppedFiles && droppedFiles.length > 1) {
+    return (
+      <BatchTable
+        initialFiles={droppedFiles}
+        onClearInitialFiles={clearDroppedFiles}
+      />
+    );
+  }
 
   return (
     <>
@@ -66,7 +95,7 @@ export default function Home() {
         id="homepage-dropzone"
         role="button"
         tabIndex={0}
-        aria-label="Drop a file or click to choose"
+        aria-label="Drop files or click to choose"
         data-over={over}
         className="drop-stage"
         onClick={() => inputRef.current?.click()}
@@ -74,21 +103,33 @@ export default function Home() {
         onDragOver={(e) => { e.preventDefault(); setOver(true); }}
         onDragEnter={(e) => { e.preventDefault(); setOver(true); }}
         onDragLeave={() => setOver(false)}
-        onDrop={(e) => { e.preventDefault(); setOver(false); const f = e.dataTransfer.files?.[0]; if (f) go(f); }}
+        onDrop={(e) => {
+          e.preventDefault();
+          setOver(false);
+          if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            handleFiles(Array.from(e.dataTransfer.files));
+          }
+        }}
       >
         <div className="drop-content">
           <p className="drop-label" data-over={over}>
-            {over ? "release to convert" : "drop a file to convert"}
+            {over ? "release to convert" : "drop files to convert"}
           </p>
-          <p className="drop-hint">or click anywhere to browse</p>
+          <p className="drop-hint">supports multiple files · click anywhere to browse</p>
         </div>
 
         <input
           ref={inputRef}
           type="file"
+          multiple
           accept="*/*"
           className="sr-only"
-          onChange={(e) => { const f = e.target.files?.[0]; if (f) go(f); if (inputRef.current) inputRef.current.value = ""; }}
+          onChange={(e) => {
+            if (e.target.files && e.target.files.length > 0) {
+              handleFiles(Array.from(e.target.files));
+            }
+            if (inputRef.current) inputRef.current.value = "";
+          }}
         />
       </div>
 

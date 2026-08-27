@@ -4,30 +4,45 @@ import { useCallback, useRef, useState } from "react";
 import { UploadCloud } from "lucide-react";
 
 interface UploadDropzoneProps {
-  onFileSelect: (file: File) => void;
+  onFileSelect?: (file: File) => void;
+  onFilesSelect?: (files: File[]) => void;
 }
 
-export function UploadDropzone({ onFileSelect }: UploadDropzoneProps) {
+export function UploadDropzone({ onFileSelect, onFilesSelect }: UploadDropzoneProps) {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFiles = useCallback(
+    (files: FileList | null) => {
+      if (!files || files.length === 0) return;
+      const fileArr = Array.from(files);
+      if (fileArr.length > 1 && onFilesSelect) {
+        onFilesSelect(fileArr);
+      } else if (fileArr.length === 1) {
+        if (onFilesSelect) onFilesSelect(fileArr);
+        else if (onFileSelect) onFileSelect(fileArr[0]);
+      } else if (onFilesSelect) {
+        onFilesSelect(fileArr);
+      }
+    },
+    [onFileSelect, onFilesSelect]
+  );
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
       setIsDragging(false);
-      const f = e.dataTransfer.files?.[0];
-      if (f) onFileSelect(f);
+      handleFiles(e.dataTransfer.files);
     },
-    [onFileSelect]
+    [handleFiles]
   );
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const f = e.target.files?.[0];
-      if (f) onFileSelect(f);
+      handleFiles(e.target.files);
       if (fileInputRef.current) fileInputRef.current.value = "";
     },
-    [onFileSelect]
+    [handleFiles]
   );
 
   return (
@@ -37,7 +52,7 @@ export function UploadDropzone({ onFileSelect }: UploadDropzoneProps) {
           Convert images
         </h1>
         <p className="text-sm md:text-base text-[var(--muted-foreground)] mt-2 max-w-lg leading-relaxed">
-          Client-side converter. No file uploads, no tracking, 100% private.
+          Batch convert, compress & reorder images to PDF. 100% private in browser.
         </p>
       </div>
 
@@ -67,10 +82,10 @@ export function UploadDropzone({ onFileSelect }: UploadDropzoneProps) {
           </div>
           <div>
             <div className="text-sm md:text-base font-medium text-[var(--foreground)]">
-              Drop an image here, or choose file
+              Drop images here, or choose files
             </div>
             <div className="text-xs font-mono text-[var(--muted-foreground)] mt-0.5">
-              JPEG · PNG · WebP · AVIF · GIF · SVG · TIFF · BMP · ICO · TGA · HEIC
+              Supports multiple files · JPEG · PNG · WebP · AVIF · GIF · SVG · TIFF · BMP · HEIC
             </div>
           </div>
         </div>
@@ -78,6 +93,7 @@ export function UploadDropzone({ onFileSelect }: UploadDropzoneProps) {
         <input
           ref={fileInputRef}
           type="file"
+          multiple
           accept="image/*,.heic,.heif,.svg,.bmp,.ico,.tga,.tiff,.tif"
           className="hidden"
           onChange={handleChange}

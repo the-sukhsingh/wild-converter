@@ -20,6 +20,9 @@ import { DocumentFormatSelector } from "./document-format-selector";
 import { DocumentOptionsPanel } from "./document-options";
 import { DocumentActionBar } from "./document-action-bar";
 import { DocumentPreviewModal } from "./document-preview-modal";
+import { BatchTable } from "@/components/batch-converter/batch-table";
+import { PdfToImageWorkspace } from "@/components/batch-converter/pdf-to-image-workspace";
+import { FileStack } from "lucide-react";
 
 interface OnConversionCompletePayload {
   inputFileName: string;
@@ -31,16 +34,27 @@ interface OnConversionCompletePayload {
 
 interface DocumentConverterProps {
   initialFile?: File | null;
+  initialFiles?: File[];
   onClearInitialFile?: () => void;
   onConversionComplete?: (payload: OnConversionCompletePayload) => void;
 }
 
 export function DocumentConverter({
   initialFile,
+  initialFiles,
   onClearInitialFile,
   onConversionComplete,
 }: DocumentConverterProps = {}) {
-  const [file, setFile] = useState<File | null>(initialFile || null);
+  // Batch state
+  const [batchFiles, setBatchFiles] = useState<File[]>(
+    initialFiles && initialFiles.length > 1 ? initialFiles : []
+  );
+  const [isPdfToImageMode, setIsPdfToImageMode] = useState(false);
+
+  // Single file state
+  const [file, setFile] = useState<File | null>(
+    initialFiles && initialFiles.length === 1 ? initialFiles[0] : initialFile || null
+  );
   const [inputFormat, setInputFormat] = useState<DocumentFormat | null>(null);
   const [targetFormat, setTargetFormat] = useState<DocumentFormat>("pdf");
   const [searchQuery, setSearchQuery] = useState("");
@@ -72,6 +86,7 @@ export function DocumentConverter({
 
   // Handle file select
   const handleFileSelect = useCallback((f: File) => {
+    setBatchFiles([]);
     setFile(f);
     const detected = detectDocumentFormat(f);
     setInputFormat(detected);
@@ -89,22 +104,26 @@ export function DocumentConverter({
     setErrorMsg(null);
   }, []);
 
-  // Sync initialFile if passed from parent
-  useEffect(() => {
-    if (initialFile) {
-      if (initialFile !== file) {
-        handleFileSelect(initialFile);
-      }
-    } else if (file) {
+  const handleFilesSelect = useCallback((files: File[]) => {
+    if (files.length > 1) {
+      setBatchFiles(files);
       setFile(null);
-      setInputFormat(null);
-      setDocumentIR(null);
-      setExactProbedSize(null);
-      setProbedResult(null);
-      setConversionResult(null);
-      setErrorMsg(null);
+    } else if (files.length === 1) {
+      handleFileSelect(files[0]);
     }
-  }, [initialFile, file, handleFileSelect]);
+  }, [handleFileSelect]);
+
+  // Sync initialFiles or initialFile from props
+  useEffect(() => {
+    if (initialFiles && initialFiles.length > 1) {
+      setBatchFiles(initialFiles);
+      setFile(null);
+    } else if (initialFiles && initialFiles.length === 1) {
+      handleFileSelect(initialFiles[0]);
+    } else if (initialFile) {
+      handleFileSelect(initialFile);
+    }
+  }, [initialFile, initialFiles, handleFileSelect]);
 
   // Parse document in background when file changes
   useEffect(() => {
@@ -187,6 +206,7 @@ export function DocumentConverter({
   const handleRemove = useCallback(() => {
     handleCancel();
     setFile(null);
+    setBatchFiles([]);
     setInputFormat(null);
     setDocumentIR(null);
     setExactProbedSize(null);
@@ -234,6 +254,7 @@ export function DocumentConverter({
   }, [file, targetFormat, options, probedResult, onConversionComplete]);
 
   const hasFile = !!file;
+  const isPdf = inputFormat === "pdf" || (file?.name.toLowerCase().endsWith(".pdf") ?? false);
   const outputName = file ? buildDocumentOutputName(file.name, targetFormat) : "";
 
   const resultUrl = useMemo(() => {
@@ -246,6 +267,27 @@ export function DocumentConverter({
     return Math.round(((exactProbedSize - file.size) / file.size) * 100);
   }, [exactProbedSize, file?.size]);
 
+  // If in PDF-to-Image mode
+  if (isPdfToImageMode && file) {
+    return (
+      <PdfToImageWorkspace
+        pdfFile={file}
+        onBack={() => setIsPdfToImageMode(false)}
+      />
+    );
+  }
+
+  // If batch files
+  if (batchFiles.length > 0) {
+    return (
+      <BatchTable
+        initialFiles={batchFiles}
+        onClearInitialFiles={handleRemove}
+        defaultCategory="documents"
+      />
+    );
+  }
+
   return (
     <div className="relative flex-1 w-full max-w-5xl mx-auto px-4 md:px-8 overflow-hidden">
       {/* State 1: Upload / Dropzone */}
@@ -255,7 +297,10 @@ export function DocumentConverter({
         }`}
         aria-hidden={hasFile}
       >
-        <DocumentDropzone onFileSelect={handleFileSelect} />
+        <DocumentDropzone
+          onFileSelect={handleFileSelect}
+          onFilesSelect={handleFilesSelect}
+        />
       </div>
 
       {/* State 2: Active Workspace */}
@@ -267,14 +312,26 @@ export function DocumentConverter({
       >
         {file && (
           <div className="h-full flex flex-col justify-between gap-4">
-            {/* Document Header */}
-            <DocumentHeader
-              file={file}
-              inputFormat={inputFormat}
-              metadata={documentIR?.metadata || null}
-              onRemove={handleRemove}
-              onPreview={() => setIsPreviewOpen(true)}
-            />
+            {/* Document Header with PDF-to-Image quick action */}
+            <div className="flex items-center justify-between border-b border-[var(--border)]/40 pb-2">
+              <DocumentHeader
+                file={file}
+                inputFormat={inputFormat}
+                metadata={documentIR?.metadata || null}
+                onRemove={handleRemove}
+                onPreview={() => setIsPreviewOpen(true)}
+              />
+              {isPdf && (
+                <button
+                  type="button"
+                  onClick={() => setIsPdfToImageMode(true)}
+                  className="shrink-0 px-2.5 py-1 text-xs font-mono font-medium rounded-md border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--muted)] text-[var(--foreground)] transition-colors flex items-center gap-1.5 ml-2"
+                >
+                  <FileStack className="w-3.5 h-3.5 text-blue-500" />
+                  <span>PDF to Images</span>
+                </button>
+              )}
+            </div>
 
             {/* Target Format Selector */}
             <DocumentFormatSelector

@@ -18,6 +18,7 @@ import { AudioHeader } from "./audio-header";
 import { AudioFormatSelector } from "./audio-format-selector";
 import { AudioOptionsPanel } from "./audio-options";
 import { AudioActionBar } from "./audio-action-bar";
+import { BatchTable } from "@/components/batch-converter/batch-table";
 
 interface OnConversionCompletePayload {
   inputFileName: string;
@@ -29,16 +30,24 @@ interface OnConversionCompletePayload {
 
 interface AudioConverterProps {
   initialFile?: File | null;
+  initialFiles?: File[];
   onClearInitialFile?: () => void;
   onConversionComplete?: (payload: OnConversionCompletePayload) => void;
 }
 
 export function AudioConverter({
   initialFile,
+  initialFiles,
   onClearInitialFile,
   onConversionComplete,
 }: AudioConverterProps = {}) {
-  const [file, setFile] = useState<File | null>(initialFile || null);
+  const [batchFiles, setBatchFiles] = useState<File[]>(
+    initialFiles && initialFiles.length > 1 ? initialFiles : []
+  );
+
+  const [file, setFile] = useState<File | null>(
+    initialFiles && initialFiles.length === 1 ? initialFiles[0] : initialFile || null
+  );
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
   const [metadata, setMetadata] = useState<AudioMetadata | null>(null);
   const [targetFormat, setTargetFormat] = useState<AudioFormat>("mp3");
@@ -62,6 +71,7 @@ export function AudioConverter({
   const isCancelledRef = useRef(false);
 
   const handleFileSelect = useCallback(async (f: File) => {
+    setBatchFiles([]);
     setFile(f);
     setErrorMsg(null);
     setConversionResult(null);
@@ -87,20 +97,26 @@ export function AudioConverter({
     }
   }, []);
 
-  // Sync initialFile
-  useEffect(() => {
-    if (initialFile) {
-      if (initialFile !== file) {
-        handleFileSelect(initialFile);
-      }
-    } else if (file) {
+  const handleFilesSelect = useCallback((files: File[]) => {
+    if (files.length > 1) {
+      setBatchFiles(files);
       setFile(null);
-      setAudioBuffer(null);
-      setMetadata(null);
-      setConversionResult(null);
-      setErrorMsg(null);
+    } else if (files.length === 1) {
+      handleFileSelect(files[0]);
     }
-  }, [initialFile, file, handleFileSelect]);
+  }, [handleFileSelect]);
+
+  // Sync initialFiles / initialFile from props
+  useEffect(() => {
+    if (initialFiles && initialFiles.length > 1) {
+      setBatchFiles(initialFiles);
+      setFile(null);
+    } else if (initialFiles && initialFiles.length === 1) {
+      handleFileSelect(initialFiles[0]);
+    } else if (initialFile) {
+      handleFileSelect(initialFile);
+    }
+  }, [initialFile, initialFiles, handleFileSelect]);
 
   // Live estimated size calculation
   useEffect(() => {
@@ -140,6 +156,7 @@ export function AudioConverter({
   const handleRemove = useCallback(() => {
     handleCancel();
     setFile(null);
+    setBatchFiles([]);
     setAudioBuffer(null);
     setMetadata(null);
     setConversionResult(null);
@@ -200,6 +217,17 @@ export function AudioConverter({
     return Math.round(((exactProbedSize - file.size) / file.size) * 100);
   }, [exactProbedSize, file?.size]);
 
+  // If in batch mode
+  if (batchFiles.length > 0) {
+    return (
+      <BatchTable
+        initialFiles={batchFiles}
+        onClearInitialFiles={handleRemove}
+        defaultCategory="audio"
+      />
+    );
+  }
+
   return (
     <div className="relative flex-1 w-full max-w-5xl mx-auto px-4 md:px-8 overflow-hidden">
       {/* State 1: Dropzone */}
@@ -209,7 +237,10 @@ export function AudioConverter({
         }`}
         aria-hidden={isReady}
       >
-        <AudioDropzone onFileSelect={handleFileSelect} />
+        <AudioDropzone
+          onFileSelect={handleFileSelect}
+          onFilesSelect={handleFilesSelect}
+        />
         {errorMsg && !isReady && (
           <div className="mt-4 p-3 rounded-lg bg-destructive/10 text-destructive text-xs font-mono max-w-xl">
             {errorMsg}
