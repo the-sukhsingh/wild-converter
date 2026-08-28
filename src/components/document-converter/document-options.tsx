@@ -32,7 +32,7 @@ export function DocumentOptionsPanel({
   const latexClass = options.latexClass || "article";
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-3 border-y border-[var(--border)] min-h-[82px] items-center">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 py-3 border-y border-[var(--border)] min-h-[82px] items-center">
       {/* Column 1 */}
       {isPdf ? (
         <div className="flex flex-col gap-1.5">
@@ -42,13 +42,13 @@ export function DocumentOptionsPanel({
               {pageSize} · {orientation}
             </span>
           </div>
-          <div className="flex items-center gap-1.5 flex-nowrap overflow-x-auto no-scrollbar">
+          <div className="flex flex-wrap items-center gap-1.5">
             {(["a4", "letter", "legal"] as const).map((s) => (
               <button
                 key={s}
                 type="button"
                 onClick={() => onOptionsChange({ ...options, pdfPageSize: s })}
-                className={`h-7 px-2.5 rounded-md text-xs font-mono font-medium uppercase transition-all cursor-pointer shrink-0 ${
+                className={`h-7.5 px-2.5 rounded-md text-xs font-mono font-medium uppercase transition-all cursor-pointer shrink-0 ${
                   pageSize === s
                     ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs"
                     : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
@@ -57,13 +57,13 @@ export function DocumentOptionsPanel({
                 {s}
               </button>
             ))}
-            <span className="text-xs text-[var(--muted-foreground)] mx-0.5 shrink-0">•</span>
+            <span className="text-xs text-[var(--muted-foreground)] mx-0.5 shrink-0 hidden sm:inline">•</span>
             {(["portrait", "landscape"] as const).map((o) => (
               <button
                 key={o}
                 type="button"
                 onClick={() => onOptionsChange({ ...options, pdfOrientation: o })}
-                className={`h-7 px-2.5 rounded-md text-xs font-mono font-medium capitalize transition-all cursor-pointer shrink-0 ${
+                className={`h-7.5 px-2.5 rounded-md text-xs font-mono font-medium capitalize transition-all cursor-pointer shrink-0 ${
                   orientation === o
                     ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs"
                     : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
@@ -82,13 +82,13 @@ export function DocumentOptionsPanel({
               {docxFont === "sans" ? "Sans (Arial)" : docxFont === "serif" ? "Serif (Georgia)" : "Mono (Courier)"}
             </span>
           </div>
-          <div className="flex items-center gap-1.5 flex-nowrap">
+          <div className="flex flex-wrap items-center gap-1.5">
             {(["sans", "serif", "mono"] as const).map((f) => (
               <button
                 key={f}
                 type="button"
                 onClick={() => onOptionsChange({ ...options, docxFontFamily: f })}
-                className={`h-7 px-3 rounded-md text-xs font-mono font-medium capitalize transition-all cursor-pointer shrink-0 ${
+                className={`h-7.5 px-3 rounded-md text-xs font-mono font-medium capitalize transition-all cursor-pointer shrink-0 ${
                   docxFont === f
                     ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs"
                     : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
@@ -107,7 +107,7 @@ export function DocumentOptionsPanel({
               {targetFormat === "csv" ? (delimiter === "," ? "Comma (,)" : delimiter === ";" ? "Semicolon (;)" : "Tab") : "Multi-Sheet Grid"}
             </span>
           </div>
-          <div className="flex items-center gap-1.5 flex-nowrap">
+          <div className="flex flex-wrap items-center gap-1.5">
             {targetFormat === "csv" ? (
               [
                 { label: "Comma (,)", value: "," },
@@ -123,7 +123,7 @@ export function DocumentOptionsPanel({
                       csvDelimiter: d.value as "," | ";" | "\t",
                     })
                   }
-                  className={`h-7 px-2.5 rounded-md text-xs font-mono font-medium transition-all cursor-pointer shrink-0 ${
+                  className={`h-7.5 px-2.5 rounded-md text-xs font-mono font-medium transition-all cursor-pointer shrink-0 ${
                     delimiter === d.value
                       ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs"
                       : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
@@ -165,13 +165,13 @@ export function DocumentOptionsPanel({
               {margins} margins
             </span>
           </div>
-          <div className="flex items-center gap-1.5 flex-nowrap overflow-x-auto no-scrollbar">
+          <div className="flex flex-wrap items-center gap-1.5">
             {(["compact", "normal", "wide"] as const).map((m) => (
               <button
                 key={m}
                 type="button"
                 onClick={() => onOptionsChange({ ...options, pdfMargins: m })}
-                className={`h-7 px-2.5 rounded-md text-xs font-mono font-medium capitalize transition-all cursor-pointer shrink-0 ${
+                className={`h-7.5 px-2.5 rounded-md text-xs font-mono font-medium capitalize transition-all cursor-pointer shrink-0 ${
                   margins === m
                     ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs"
                     : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
@@ -180,7 +180,7 @@ export function DocumentOptionsPanel({
                 {m}
               </button>
             ))}
-            <span className="text-xs text-[var(--muted-foreground)] mx-0.5 shrink-0">•</span>
+            <span className="text-xs text-[var(--muted-foreground)] mx-0.5 shrink-0 hidden sm:inline">•</span>
             <button
               type="button"
               onClick={() =>
@@ -189,7 +189,7 @@ export function DocumentOptionsPanel({
                   pdfPageNumbers: !(options.pdfPageNumbers ?? true),
                 })
               }
-              className={`h-7 px-2.5 rounded-md text-xs font-mono font-medium transition-all cursor-pointer shrink-0 ${
+              className={`h-7.5 px-2.5 rounded-md text-xs font-mono font-medium transition-all cursor-pointer shrink-0 ${
                 options.pdfPageNumbers ?? true
                   ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs"
                   : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
@@ -217,7 +217,7 @@ export function DocumentOptionsPanel({
               {options.includeStyling !== false ? "Embedded CSS" : "Plain HTML"}
             </span>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
             <button
               type="button"
               onClick={() =>
@@ -226,7 +226,7 @@ export function DocumentOptionsPanel({
                   includeStyling: !(options.includeStyling ?? true),
                 })
               }
-              className={`h-7 px-3 rounded-md text-xs font-mono font-medium transition-all cursor-pointer shrink-0 ${
+              className={`h-7.5 px-3 rounded-md text-xs font-mono font-medium transition-all cursor-pointer shrink-0 ${
                 options.includeStyling !== false
                   ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs"
                   : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
@@ -244,13 +244,13 @@ export function DocumentOptionsPanel({
               {latexClass}
             </span>
           </div>
-          <div className="flex items-center gap-1.5 flex-nowrap">
+          <div className="flex flex-wrap items-center gap-1.5">
             {(["article", "report", "book"] as const).map((cls) => (
               <button
                 key={cls}
                 type="button"
                 onClick={() => onOptionsChange({ ...options, latexClass: cls })}
-                className={`h-7 px-2.5 rounded-md text-xs font-mono font-medium capitalize transition-all cursor-pointer shrink-0 ${
+                className={`h-7.5 px-2.5 rounded-md text-xs font-mono font-medium capitalize transition-all cursor-pointer shrink-0 ${
                   latexClass === cls
                     ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs"
                     : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"

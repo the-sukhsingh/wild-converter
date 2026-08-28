@@ -81,24 +81,24 @@ function HistoryRecord({ record }: { record: ConversionRecord }) {
           </span>
         </div>
 
-        <div className="flex items-center gap-1 text-[10px] font-mono text-[var(--muted-foreground)]">
+        <div className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-[10px] font-mono text-[var(--muted-foreground)]">
           <span>{ext(record.inputFileName)}</span>
           <ArrowRight className="w-2.5 h-2.5 shrink-0" />
           <span>{ext(record.outputFileName)}</span>
-          <span className="mx-1 text-[var(--border)]">·</span>
+          <span className="mx-0.5 text-[var(--border)]">·</span>
           <span>{formatFileSize(record.inputSize)}</span>
           {record.status === "done" && (
             <>
               <ArrowRight className="w-2.5 h-2.5 shrink-0" />
               <span>{formatFileSize(record.outputSize)}</span>
               {sizeDelta < 0 && (
-                <span className="text-emerald-500 ml-0.5">
+                <span className="text-emerald-500 ml-0.5 font-medium">
                   ({deltaPercent}%)
                 </span>
               )}
             </>
           )}
-          <span className="mx-1 text-[var(--border)]">·</span>
+          <span className="mx-0.5 text-[var(--border)]">·</span>
           <span>{relativeTime(record.timestamp)}</span>
         </div>
       </div>
@@ -149,7 +149,7 @@ export function HistoryPanel({ isOpen, onClose }: HistoryPanelProps) {
       {/* Slide-in Panel */}
       <div
         ref={panelRef}
-        className={`fixed top-0 right-0 z-50 h-full w-80 sm:w-96 bg-[var(--background)] border-l border-[var(--border)] shadow-2xl flex flex-col transition-transform duration-250 ease-out ${
+        className={`fixed top-0 right-0 z-50 h-full w-full max-w-[320px] sm:max-w-sm bg-[var(--background)] border-l border-[var(--border)] shadow-2xl flex flex-col transition-transform duration-250 ease-out ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
         role="dialog"
@@ -157,7 +157,7 @@ export function HistoryPanel({ isOpen, onClose }: HistoryPanelProps) {
         aria-modal="true"
       >
         {/* Panel Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)] shrink-0">
+        <div className="flex items-center justify-between px-5 h-14 border-b border-[var(--border)] shrink-0">
           <div className="flex items-center gap-2">
             <History className="w-4 h-4 text-[var(--muted-foreground)]" />
             <span className="font-mono text-sm font-semibold text-[var(--foreground)]">

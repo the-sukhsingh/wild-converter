@@ -40,12 +40,12 @@ export function DocumentFormatSelector({
   }, [searchQuery]);
 
   return (
-    <div className="flex flex-col gap-2.5">
-      <div className="flex items-center justify-between text-xs font-mono text-[var(--muted-foreground)]">
-        <span className="uppercase tracking-wider font-semibold">
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-2 text-xs font-mono text-[var(--muted-foreground)]">
+        <span className="uppercase tracking-wider font-semibold text-[var(--foreground)]">
           Convert to {targetMeta?.label}
         </span>
-        <span className="text-[var(--muted-foreground)]/80 truncate max-w-[280px] md:max-w-md text-right">
+        <span className="text-[var(--muted-foreground)]/80 text-[11px] sm:text-xs">
           {targetMeta?.description}
         </span>
       </div>
@@ -72,7 +72,7 @@ export function DocumentFormatSelector({
       </div>
 
       <div
-        className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto no-scrollbar py-0.5"
+        className="flex flex-wrap gap-1.5 max-h-28 sm:max-h-24 overflow-y-auto no-scrollbar py-0.5"
         role="group"
         aria-label="Available output document formats"
       >
@@ -86,7 +86,7 @@ export function DocumentFormatSelector({
               type="button"
               disabled={isSameAsInput}
               onClick={() => onSelectFormat(fmt.id)}
-              className={`h-7 px-2.5 rounded-md text-xs font-mono font-medium inline-flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
+              className={`h-7.5 px-2.5 rounded-md text-xs font-mono font-medium inline-flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
                 isSelected
                   ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs"
                   : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"

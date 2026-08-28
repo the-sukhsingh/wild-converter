@@ -272,9 +272,9 @@ export function ImageToPdfWorkspace({
       </div>
 
       {/* ── Middle: Reorderable Image Gallery & Settings ── */}
-      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-6 py-4 overflow-hidden">
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 py-3 sm:py-4 overflow-y-auto lg:overflow-hidden">
         {/* Left / Main: Visual Thumbnail Grid (8 cols) */}
-        <div className="lg:col-span-8 flex flex-col min-h-0 h-full overflow-y-auto pr-1">
+        <div className="lg:col-span-8 flex flex-col min-h-0 lg:h-full lg:overflow-y-auto pr-0 lg:pr-1">
           {items.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center p-8 border border-dashed border-[var(--border)] rounded-xl text-center">
               <FileText className="w-8 h-8 text-[var(--muted-foreground)] mb-2" />

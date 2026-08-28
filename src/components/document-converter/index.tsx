@@ -292,7 +292,7 @@ export function DocumentConverter({
     <div className="relative flex-1 w-full max-w-5xl mx-auto px-4 md:px-8 overflow-hidden">
       {/* State 1: Upload / Dropzone */}
       <div
-        className={`absolute inset-0 px-4 md:px-8 py-6 flex flex-col justify-center transition-opacity duration-200 ${
+        className={`absolute inset-0 px-4 md:px-8 py-4 sm:py-6 overflow-y-auto flex flex-col justify-center transition-opacity duration-200 ${
           !hasFile ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
         aria-hidden={hasFile}
@@ -305,33 +305,34 @@ export function DocumentConverter({
 
       {/* State 2: Active Workspace */}
       <div
-        className={`absolute inset-0 px-4 md:px-8 py-6 flex flex-col justify-between transition-opacity duration-200 ${
+        className={`absolute inset-0 px-4 md:px-8 py-4 sm:py-6 overflow-y-auto min-h-0 transition-opacity duration-200 ${
           hasFile ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
         aria-hidden={!hasFile}
       >
         {file && (
-          <div className="h-full flex flex-col justify-between gap-4">
+          <div className="min-h-full flex flex-col justify-between gap-3 sm:gap-4">
             {/* Document Header with PDF-to-Image quick action */}
-            <div className="flex items-center justify-between border-b border-[var(--border)]/40 pb-2">
-              <DocumentHeader
-                file={file}
-                inputFormat={inputFormat}
-                metadata={documentIR?.metadata || null}
-                onRemove={handleRemove}
-                onPreview={() => setIsPreviewOpen(true)}
-              />
-              {isPdf && (
-                <button
-                  type="button"
-                  onClick={() => setIsPdfToImageMode(true)}
-                  className="shrink-0 px-2.5 py-1 text-xs font-mono font-medium rounded-md border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--muted)] text-[var(--foreground)] transition-colors flex items-center gap-1.5 ml-2"
-                >
-                  <FileStack className="w-3.5 h-3.5 text-blue-500" />
-                  <span>PDF to Images</span>
-                </button>
-              )}
-            </div>
+            <DocumentHeader
+              file={file}
+              inputFormat={inputFormat}
+              metadata={documentIR?.metadata || null}
+              onRemove={handleRemove}
+              onPreview={() => setIsPreviewOpen(true)}
+              extraAction={
+                isPdf ? (
+                  <button
+                    type="button"
+                    onClick={() => setIsPdfToImageMode(true)}
+                    className="px-2 py-1 text-xs font-mono font-medium rounded-md border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--muted)] text-[var(--foreground)] transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <FileStack className="w-3.5 h-3.5 text-blue-500" />
+                    <span className="hidden sm:inline">PDF to Images</span>
+                    <span className="sm:hidden">to Images</span>
+                  </button>
+                ) : undefined
+              }
+            />
 
             {/* Target Format Selector */}
             <DocumentFormatSelector

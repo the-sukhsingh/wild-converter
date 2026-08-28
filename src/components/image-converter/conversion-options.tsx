@@ -27,7 +27,7 @@ export function ConversionOptionsPanel({
 
   if (isPdf) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-3 border-y border-[var(--border)] min-h-[82px] items-center">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 py-3 border-y border-[var(--border)] min-h-[82px] items-center">
         {/* Column 1: Page Size & Orientation */}
         <div className="flex flex-col gap-1.5">
           <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
@@ -36,13 +36,13 @@ export function ConversionOptionsPanel({
               {pageSize} · {orientation}
             </span>
           </div>
-          <div className="flex items-center gap-1.5 flex-nowrap overflow-x-auto no-scrollbar">
+          <div className="flex flex-wrap items-center gap-1.5">
             {(["a4", "letter", "legal"] as const).map((s) => (
               <button
                 key={s}
                 type="button"
                 onClick={() => onOptionsChange({ ...options, pdfPageSize: s })}
-                className={`h-7 px-2.5 rounded-md text-xs font-mono font-medium uppercase transition-all cursor-pointer shrink-0 ${
+                className={`h-7.5 px-2.5 rounded-md text-xs font-mono font-medium uppercase transition-all cursor-pointer shrink-0 ${
                   pageSize === s
                     ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs"
                     : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
@@ -51,13 +51,13 @@ export function ConversionOptionsPanel({
                 {s}
               </button>
             ))}
-            <span className="text-xs text-[var(--muted-foreground)] mx-0.5 shrink-0">•</span>
+            <span className="text-xs text-[var(--muted-foreground)] mx-0.5 shrink-0 hidden sm:inline">•</span>
             {(["portrait", "landscape"] as const).map((o) => (
               <button
                 key={o}
                 type="button"
                 onClick={() => onOptionsChange({ ...options, pdfOrientation: o })}
-                className={`h-7 px-2.5 rounded-md text-xs font-mono font-medium capitalize transition-all cursor-pointer shrink-0 ${
+                className={`h-7.5 px-2.5 rounded-md text-xs font-mono font-medium capitalize transition-all cursor-pointer shrink-0 ${
                   orientation === o
                     ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs"
                     : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
@@ -75,13 +75,13 @@ export function ConversionOptionsPanel({
             <span>Page Margins</span>
             <span className="font-semibold text-[var(--foreground)] capitalize">{margins}</span>
           </div>
-          <div className="flex items-center gap-1.5 flex-nowrap">
+          <div className="flex flex-wrap items-center gap-1.5">
             {(["compact", "normal", "wide"] as const).map((m) => (
               <button
                 key={m}
                 type="button"
                 onClick={() => onOptionsChange({ ...options, pdfMargins: m })}
-                className={`h-7 px-2.5 rounded-md text-xs font-mono font-medium capitalize transition-all cursor-pointer shrink-0 ${
+                className={`h-7.5 px-2.5 rounded-md text-xs font-mono font-medium capitalize transition-all cursor-pointer shrink-0 ${
                   margins === m
                     ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs"
                     : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
@@ -97,7 +97,7 @@ export function ConversionOptionsPanel({
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-3 border-y border-[var(--border)] min-h-[82px] items-center">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 py-3 border-y border-[var(--border)] min-h-[82px] items-center">
       {/* Quality slider for lossy formats */}
       {!isLossless ? (
         <div className="flex flex-col gap-1.5">
@@ -114,7 +114,7 @@ export function ConversionOptionsPanel({
             onChange={(e) =>
               onOptionsChange({ ...options, quality: Number(e.target.value) / 100 })
             }
-            className="w-full h-1.5 bg-[var(--muted)] rounded-lg appearance-none cursor-pointer accent-[var(--foreground)] my-1"
+            className="w-full h-2 bg-[var(--muted)] rounded-lg appearance-none cursor-pointer accent-[var(--foreground)] my-1"
             aria-label="Compression quality"
           />
         </div>
@@ -143,7 +143,7 @@ export function ConversionOptionsPanel({
               onOptionsChange({ ...options, width: Number(e.target.value) || 0 })
             }
             placeholder={String(dimensions?.w || "width")}
-            className="w-24 h-7 px-2 text-xs font-mono bg-[var(--card)] text-[var(--foreground)] rounded-md outline-none focus:ring-1 focus:ring-[var(--ring)]"
+            className="w-20 sm:w-24 h-8 px-2.5 text-xs font-mono bg-[var(--card)] text-[var(--foreground)] rounded-md outline-none focus:ring-1 focus:ring-[var(--ring)]"
             aria-label="Target width in pixels"
           />
           <span className="text-xs text-[var(--muted-foreground)] font-mono">×</span>
@@ -156,7 +156,7 @@ export function ConversionOptionsPanel({
               onOptionsChange({ ...options, height: Number(e.target.value) || 0 })
             }
             placeholder={String(dimensions?.h || "height")}
-            className="w-24 h-7 px-2 text-xs font-mono bg-[var(--card)] text-[var(--foreground)] rounded-md outline-none focus:ring-1 focus:ring-[var(--ring)]"
+            className="w-20 sm:w-24 h-8 px-2.5 text-xs font-mono bg-[var(--card)] text-[var(--foreground)] rounded-md outline-none focus:ring-1 focus:ring-[var(--ring)]"
             aria-label="Target height in pixels"
           />
         </div>

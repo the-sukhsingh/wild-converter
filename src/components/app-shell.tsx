@@ -178,10 +178,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       }`}
     >
       {/* ─── Header ───────────────────────────────────────────────── */}
-      <header className="shrink-0 h-14 border-b border-[var(--border)] bg-[var(--background)] z-50">
-        <div className="w-full max-w-5xl h-full mx-auto px-4 md:px-8 flex items-center justify-between gap-4">
-          <Link href="/" className="flex items-baseline gap-1.5 shrink-0 select-none">
-            <span className="font-sans font-semibold text-base tracking-tight text-[var(--foreground)]">
+      <header className="shrink-0 border-b border-[var(--border)] bg-[var(--background)] z-50">
+        {/* Top Bar */}
+        <div className="w-full max-w-5xl h-13 sm:h-14 mx-auto px-4 md:px-8 flex items-center justify-between gap-3">
+          <Link href="/" className="flex items-baseline gap-1.5 shrink-0 select-none py-1">
+            <span className="font-sans font-semibold text-base sm:text-lg tracking-tight text-[var(--foreground)]">
               wild
             </span>
             <span className="font-mono text-xs text-[var(--muted-foreground)]">
@@ -189,7 +190,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </span>
           </Link>
 
-          <nav className="flex items-center gap-0.5 overflow-x-auto no-scrollbar py-1 px-1">
+          {/* Desktop Category Navigation */}
+          <nav className="hidden sm:flex items-center gap-0.5 overflow-x-auto no-scrollbar py-1 px-1">
             {CATEGORIES.map((cat) => {
               const isActive =
                 pathname === cat.href || pathname.startsWith(cat.href + "/");
@@ -197,7 +199,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Link
                   key={cat.id}
                   href={cat.href}
-                  className={`flex items-center justify-center py-2 px-2.5 rounded-md text-xs font-mono font-medium transition-colors whitespace-nowrap ${
+                  className={`flex items-center justify-center py-1.5 px-2.5 rounded-md text-xs font-mono font-medium transition-colors whitespace-nowrap ${
                     isActive
                       ? "bg-[var(--card)] text-[var(--foreground)]"
                       : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]/40"
@@ -209,8 +211,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             })}
           </nav>
 
+          {/* Action Icons */}
           <div className="shrink-0 flex items-center gap-1">
-            {/* History Button */}
             <button
               type="button"
               id="history-panel-toggle"
@@ -228,6 +230,29 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <ThemeToggle />
           </div>
         </div>
+
+        {/* Mobile Horizontal Category Scroller */}
+        <div className="sm:hidden relative border-t border-[var(--border)]/50 bg-[var(--background)]">
+          <nav className="flex items-center gap-1.5 overflow-x-auto no-scrollbar px-3 py-1.5">
+            {CATEGORIES.map((cat) => {
+              const isActive =
+                pathname === cat.href || pathname.startsWith(cat.href + "/");
+              return (
+                <Link
+                  key={cat.id}
+                  href={cat.href}
+                  className={`flex items-center justify-center h-7 px-2.5 rounded-full text-xs font-mono font-medium transition-colors whitespace-nowrap shrink-0 ${
+                    isActive
+                      ? "bg-[var(--foreground)] text-[var(--background)] shadow-xs"
+                      : "bg-[var(--card)]/80 text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+                  }`}
+                >
+                  {cat.label}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
       </header>
 
       {/* ─── Main Workspace ───────────────────────────────────────── */}
@@ -236,9 +261,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </main>
 
       {/* ─── Footer ───────────────────────────────────────────────── */}
-      <footer className="shrink-0 h-10 border-t border-[var(--border)] bg-[var(--background)] z-50">
-        <div className="w-full max-w-5xl h-full mx-auto px-4 md:px-8 flex items-center justify-between text-xs font-mono text-[var(--muted-foreground)]">
-          <span className="truncate">wild · {engineName}</span>
+      <footer className="shrink-0 h-9 sm:h-10 border-t border-[var(--border)] bg-[var(--background)] z-50">
+        <div className="w-full max-w-5xl h-full mx-auto px-4 md:px-8 flex items-center justify-between text-[11px] sm:text-xs font-mono text-[var(--muted-foreground)]">
+          <span className="truncate max-w-[280px] sm:max-w-none">wild · {engineName}</span>
           <span className="hidden sm:inline shrink-0">100% private · zero server uploads</span>
         </div>
       </footer>

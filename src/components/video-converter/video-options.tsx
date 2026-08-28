@@ -21,7 +21,7 @@ export function VideoOptionsPanel({
   const isGif = options.format === "gif";
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 py-3 border-y border-[var(--border)] min-h-[82px] items-center">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 py-3 border-y border-[var(--border)] min-h-[82px] items-center">
       {/* Slot 1: Target Resolution or Audio Bitrate */}
       {!isAudioOnly ? (
         <div className="flex flex-col gap-1.5">

@@ -175,9 +175,9 @@ export function PdfToImageWorkspace({
       </div>
 
       {/* ── Middle: Config + Page Grid ── */}
-      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-6 py-4 overflow-hidden">
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 py-3 sm:py-4 overflow-y-auto lg:overflow-hidden">
         {/* Left: Configuration Panel (4 cols) */}
-        <div className="lg:col-span-4 flex flex-col gap-4 p-4 rounded-xl bg-[var(--card)]/30 border border-[var(--border)]/40 overflow-y-auto">
+        <div className="lg:col-span-4 flex flex-col gap-4 p-4 rounded-xl bg-[var(--card)]/30 border border-[var(--border)]/40 lg:overflow-y-auto">
           <div className="flex items-center gap-2">
             <Sliders className="w-4 h-4 text-[var(--muted-foreground)]" />
             <h3 className="font-mono text-xs font-semibold text-[var(--foreground)] uppercase tracking-wider">

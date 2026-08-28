@@ -20,7 +20,7 @@ export function VectorOptionsPanel({
   const isRaster = formatInfo.category === "rasterize";
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 py-3 border-y border-[var(--border)] min-h-[82px] items-center">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 py-3 border-y border-[var(--border)] min-h-[82px] items-center">
       {/* Raster Scale Preset or DPI */}
       {isRaster ? (
         <div className="flex flex-col gap-1.5">

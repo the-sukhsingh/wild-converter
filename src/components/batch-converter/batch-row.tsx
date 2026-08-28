@@ -1,10 +1,9 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useMemo } from "react";
 import type { BatchItem } from "@/lib/batch-converter/types";
 import {
   getAvailableTargetFormats,
-  resolveOutputFilename,
 } from "@/lib/batch-converter/batch-runner";
 import { formatFileSize } from "@/lib/format-utils";
 import { useSizeEstimate } from "./use-size-estimate";
@@ -83,7 +82,7 @@ export function BatchRow({
     return Math.round(((item.outputSize - item.size) / item.size) * 100);
   }, [item.outputSize, item.size]);
 
-  // Feature 6: Output size estimate
+  // Output size estimate
   const sizeEstimate = useSizeEstimate(item);
 
   return (
@@ -112,14 +111,14 @@ export function BatchRow({
         <GripVertical className="w-3.5 h-3.5" />
       </div>
 
-      {/* Offset content by drag handle width on desktop */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 w-full md:pl-3">
+      {/* Content wrapper */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-3 w-full md:pl-3">
         {/* ── Left: Icon + File Name + Input Size ── */}
         <button
           type="button"
           onClick={() => onPreview(item)}
           title="Preview file"
-          className="flex items-center gap-3 min-w-0 md:w-5/12 text-left hover:opacity-80 transition-opacity"
+          className="flex items-center gap-2.5 sm:gap-3 min-w-0 md:w-5/12 text-left hover:opacity-80 transition-opacity cursor-pointer"
         >
           <div className="shrink-0 p-2 rounded-md bg-[var(--background)] border border-[var(--border)]/30">
             {getCategoryIcon(item.category)}
@@ -128,41 +127,43 @@ export function BatchRow({
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-2">
               <span
-                className="font-mono text-sm font-medium text-[var(--foreground)] truncate"
+                className="font-mono text-xs sm:text-sm font-medium text-[var(--foreground)] truncate"
                 title={item.name}
               >
                 {item.name}
               </span>
               {item.detectedInputFormat && (
-                <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-mono uppercase bg-[var(--muted)] text-[var(--muted-foreground)]">
+                <span className="shrink-0 px-1.5 py-0.2 rounded text-[10px] font-mono uppercase bg-[var(--muted)] text-[var(--muted-foreground)]">
                   {item.detectedInputFormat}
                 </span>
               )}
             </div>
-            <span className="font-mono text-xs text-[var(--muted-foreground)]">
+            <span className="font-mono text-[11px] sm:text-xs text-[var(--muted-foreground)]">
               {formatFileSize(item.size)}
             </span>
           </div>
         </button>
 
         {/* ── Middle: Target Format Selector + Settings Gear ── */}
-        <div className="flex items-center gap-2 shrink-0 md:w-3/12">
-          <span className="text-xs font-mono text-[var(--muted-foreground)] shrink-0">
-            to:
-          </span>
-          <div className="relative flex-1 min-w-[110px]">
-            <select
-              value={item.targetFormat}
-              disabled={item.status === "converting" || item.status === "done"}
-              onChange={(e) => onUpdateTargetFormat(item.id, e.target.value)}
-              className="w-full h-8 px-2.5 py-1 text-xs font-mono font-medium rounded-md bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)] focus:outline-none focus:ring-1 focus:ring-[var(--ring)] disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed uppercase"
-            >
-              {availableFormats.map((fmt) => (
-                <option key={fmt.id} value={fmt.id}>
-                  {fmt.label}
-                </option>
-              ))}
-            </select>
+        <div className="flex items-center gap-2 shrink-0 w-full md:w-3/12 justify-between md:justify-start">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <span className="text-xs font-mono text-[var(--muted-foreground)] shrink-0">
+              to:
+            </span>
+            <div className="relative flex-1 min-w-[100px]">
+              <select
+                value={item.targetFormat}
+                disabled={item.status === "converting" || item.status === "done"}
+                onChange={(e) => onUpdateTargetFormat(item.id, e.target.value)}
+                className="w-full h-8 px-2.5 py-1 text-xs font-mono font-medium rounded-md bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)] focus:outline-none focus:ring-1 focus:ring-[var(--ring)] disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed uppercase"
+              >
+                {availableFormats.map((fmt) => (
+                  <option key={fmt.id} value={fmt.id}>
+                    {fmt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <button
@@ -170,22 +171,21 @@ export function BatchRow({
             title="Conversion Settings"
             disabled={item.status === "converting"}
             onClick={() => onOpenOptions(item)}
-            className="shrink-0 p-1.5 rounded-md text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]/50 transition-colors disabled:opacity-40"
+            className="shrink-0 p-1.5 rounded-md text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]/50 transition-colors disabled:opacity-40 cursor-pointer"
           >
             <Settings className="w-4 h-4" />
           </button>
         </div>
 
         {/* ── Right: Status, Progress & Action Buttons ── */}
-        <div className="flex items-center justify-between md:justify-end gap-3 md:w-4/12">
+        <div className="flex items-center justify-between md:justify-end gap-2.5 sm:gap-3 w-full md:w-4/12">
           {/* Status / Output Size Display */}
-          <div className="flex flex-col md:items-end text-left md:text-right min-w-[100px]">
+          <div className="flex flex-col md:items-end text-left md:text-right min-w-[90px] sm:min-w-[100px]">
             {item.status === "idle" && (
               <div className="flex flex-col gap-0.5">
                 <span className="text-xs font-mono text-[var(--muted-foreground)]">
                   Ready
                 </span>
-                {/* Feature 6: estimated output size */}
                 {sizeEstimate && (
                   <span className="text-[10px] font-mono text-[var(--muted-foreground)]/60">
                     {sizeEstimate}
@@ -195,7 +195,7 @@ export function BatchRow({
             )}
 
             {item.status === "converting" && (
-              <div className="flex flex-col gap-1 w-24">
+              <div className="flex flex-col gap-1 w-20 sm:w-24">
                 <div className="flex items-center gap-1 text-xs font-mono text-primary font-medium">
                   <Loader2 className="w-3 h-3 animate-spin" />
                   <span>{item.progress}%</span>
@@ -207,7 +207,7 @@ export function BatchRow({
                   />
                 </div>
                 {item.statusText && (
-                  <span className="text-[10px] font-mono text-[var(--muted-foreground)] truncate max-w-[96px]">
+                  <span className="text-[10px] font-mono text-[var(--muted-foreground)] truncate max-w-[80px] sm:max-w-[96px]">
                     {item.statusText}
                   </span>
                 )}
@@ -222,7 +222,7 @@ export function BatchRow({
                 </span>
                 {sizeDiffPercent !== null && (
                   <span
-                    className={`font-mono text-[10px] px-1 py-0.5 rounded ${
+                    className={`font-mono text-[10px] px-1 py-0.2 rounded ${
                       sizeDiffPercent < 0
                         ? "text-emerald-500 bg-emerald-500/10"
                         : "text-[var(--muted-foreground)] bg-[var(--muted)]"
@@ -237,7 +237,7 @@ export function BatchRow({
             {item.status === "error" && (
               <div className="flex items-center gap-1 text-xs font-mono text-destructive">
                 <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                <span className="truncate max-w-[120px]" title={item.error || "Failed"}>
+                <span className="truncate max-w-[100px] sm:max-w-[120px]" title={item.error || "Failed"}>
                   {item.error || "Error"}
                 </span>
               </div>
@@ -251,7 +251,7 @@ export function BatchRow({
                 type="button"
                 title="Convert this file"
                 onClick={() => onConvertSingle(item)}
-                className="px-2.5 py-1 text-xs font-mono font-medium rounded-md bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 transition-opacity flex items-center gap-1"
+                className="h-7.5 px-2.5 py-1 text-xs font-mono font-medium rounded-md bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 transition-opacity flex items-center gap-1 cursor-pointer"
               >
                 <Play className="w-3 h-3 fill-current" />
                 <span>Convert</span>
@@ -263,7 +263,7 @@ export function BatchRow({
                 type="button"
                 title="Download converted file"
                 onClick={() => onDownloadSingle(item)}
-                className="px-2.5 py-1 text-xs font-mono font-medium rounded-md bg-emerald-600 hover:bg-emerald-500 text-white transition-colors flex items-center gap-1 shadow-sm"
+                className="h-7.5 px-2.5 py-1 text-xs font-mono font-medium rounded-md bg-emerald-600 hover:bg-emerald-500 text-white transition-colors flex items-center gap-1 shadow-xs cursor-pointer"
               >
                 <Download className="w-3 h-3" />
                 <span>Download</span>
@@ -275,7 +275,7 @@ export function BatchRow({
                 type="button"
                 title="Retry conversion"
                 onClick={() => onRetry(item)}
-                className="px-2.5 py-1 text-xs font-mono font-medium rounded-md bg-destructive text-destructive-foreground hover:opacity-90 transition-opacity flex items-center gap-1"
+                className="h-7.5 px-2.5 py-1 text-xs font-mono font-medium rounded-md bg-destructive text-destructive-foreground hover:opacity-90 transition-opacity flex items-center gap-1 cursor-pointer"
               >
                 <RotateCw className="w-3 h-3" />
                 <span>Retry</span>
@@ -287,7 +287,7 @@ export function BatchRow({
               title="Remove from batch"
               disabled={item.status === "converting"}
               onClick={() => onRemove(item.id)}
-              className="p-1.5 rounded-md text-[var(--muted-foreground)] hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-40"
+              className="p-1.5 rounded-md text-[var(--muted-foreground)] hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-40 cursor-pointer"
             >
               <Trash2 className="w-4 h-4" />
             </button>

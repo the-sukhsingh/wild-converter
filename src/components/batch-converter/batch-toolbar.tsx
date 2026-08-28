@@ -8,7 +8,6 @@ import {
   Download,
   Plus,
   Trash2,
-  CheckCircle2,
   FileStack,
   Images,
   Loader2,
@@ -74,10 +73,10 @@ export function BatchToolbar({
       : null;
 
   return (
-    <div className="flex flex-col gap-3 py-3 border-b border-[var(--border)] bg-[var(--background)]">
+    <div className="flex flex-col gap-2.5 py-3 border-b border-[var(--border)] bg-[var(--background)] w-full">
       {/* ── Top Bar: Statistics & Quick Mode Triggers ── */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-1.5 font-mono text-xs font-semibold text-[var(--foreground)]">
             <Layers className="w-4 h-4 text-[var(--muted-foreground)]" />
             <span>
@@ -86,22 +85,22 @@ export function BatchToolbar({
           </div>
 
           {doneCount > 0 && savedBytes > 0 && (
-            <span className="hidden sm:inline font-mono text-xs text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded">
+            <span className="font-mono text-[11px] sm:text-xs text-emerald-500 bg-emerald-500/10 px-1.5 sm:px-2 py-0.5 rounded">
               saved {formatFileSize(savedBytes)} ({savedPercent}%)
             </span>
           )}
         </div>
 
         {/* Specialized mode triggers */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap">
           {imageCount >= 2 && onOpenImageToPdf && (
             <button
               type="button"
               onClick={onOpenImageToPdf}
-              className="px-2.5 py-1 text-xs font-mono font-medium rounded-md border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--muted)] text-[var(--foreground)] transition-colors flex items-center gap-1.5"
+              className="h-7.5 px-2 sm:px-2.5 text-[11px] sm:text-xs font-mono font-medium rounded-md border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--muted)] text-[var(--foreground)] transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <Images className="w-3.5 h-3.5 text-emerald-500" />
-              <span>Image to PDF (Reorder)</span>
+              <span>Image to PDF</span>
             </button>
           )}
 
@@ -109,7 +108,7 @@ export function BatchToolbar({
             <button
               type="button"
               onClick={() => onOpenPdfToImage(pdfItem.file)}
-              className="px-2.5 py-1 text-xs font-mono font-medium rounded-md border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--muted)] text-[var(--foreground)] transition-colors flex items-center gap-1.5"
+              className="h-7.5 px-2 sm:px-2.5 text-[11px] sm:text-xs font-mono font-medium rounded-md border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--muted)] text-[var(--foreground)] transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <FileStack className="w-3.5 h-3.5 text-blue-500" />
               <span>PDF to Images</span>
@@ -119,10 +118,10 @@ export function BatchToolbar({
       </div>
 
       {/* ── Bottom Bar: Actions & Bulk Format ── */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         {/* Global Format Selector */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-mono text-[var(--muted-foreground)] shrink-0">
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-mono text-[var(--muted-foreground)] shrink-0 hidden sm:inline">
             Convert all to:
           </span>
           <select
@@ -133,10 +132,10 @@ export function BatchToolbar({
               }
             }}
             defaultValue=""
-            className="h-8 px-2.5 py-1 text-xs font-mono font-medium rounded-md bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)] focus:outline-none focus:ring-1 focus:ring-[var(--ring)] cursor-pointer"
+            className="h-8 px-2 py-1 text-xs font-mono font-medium rounded-md bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)] focus:outline-none focus:ring-1 focus:ring-[var(--ring)] cursor-pointer"
           >
             <option value="" disabled>
-              Select format...
+              Set all formats...
             </option>
             <optgroup label="Images">
               <option value="webp">WebP (High efficiency)</option>
@@ -161,7 +160,7 @@ export function BatchToolbar({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap">
           {/* Add more files */}
           <input
             ref={fileInputRef}
@@ -178,10 +177,10 @@ export function BatchToolbar({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="px-2.5 py-1.5 text-xs font-mono font-medium rounded-md border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--muted)] text-[var(--foreground)] transition-colors flex items-center gap-1.5"
+            className="h-8 px-2.5 text-xs font-mono font-medium rounded-md border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--muted)] text-[var(--foreground)] transition-colors flex items-center gap-1.5 cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Add Files</span>
+            <span>Add</span>
           </button>
 
           {/* Download All as ZIP */}
@@ -190,17 +189,17 @@ export function BatchToolbar({
               type="button"
               disabled={isZipping}
               onClick={onDownloadZip}
-              className="px-3 py-1.5 text-xs font-mono font-medium rounded-md bg-emerald-600 hover:bg-emerald-500 text-white transition-colors flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+              className="h-8 px-2.5 sm:px-3 text-xs font-mono font-medium rounded-md bg-emerald-600 hover:bg-emerald-500 text-white transition-colors flex items-center gap-1.5 shadow-xs disabled:opacity-50 cursor-pointer"
             >
               {isZipping ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>Zipping {zipProgress}%</span>
+                  <span>ZIP {zipProgress}%</span>
                 </>
               ) : (
                 <>
                   <Download className="w-3.5 h-3.5" />
-                  <span>Download ZIP ({doneCount})</span>
+                  <span>ZIP ({doneCount})</span>
                 </>
               )}
             </button>
@@ -212,7 +211,7 @@ export function BatchToolbar({
               type="button"
               disabled={isConvertingAll}
               onClick={onConvertAll}
-              className="px-3.5 py-1.5 text-xs font-mono font-medium rounded-md bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 transition-opacity flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+              className="h-8 px-3 sm:px-3.5 text-xs font-mono font-medium rounded-md bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 transition-opacity flex items-center gap-1.5 shadow-xs disabled:opacity-50 cursor-pointer"
             >
               {isConvertingAll ? (
                 <>
@@ -222,7 +221,7 @@ export function BatchToolbar({
               ) : (
                 <>
                   <Play className="w-3.5 h-3.5 fill-current" />
-                  <span>Convert All ({idleCount})</span>
+                  <span>Convert ({idleCount})</span>
                 </>
               )}
             </button>
@@ -234,7 +233,7 @@ export function BatchToolbar({
               type="button"
               onClick={onClearDone}
               title="Clear converted files"
-              className="p-1.5 rounded-md text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors text-xs font-mono"
+              className="h-8 px-2 rounded-md text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors text-xs font-mono cursor-pointer"
             >
               Clear Done
             </button>
@@ -244,7 +243,7 @@ export function BatchToolbar({
             type="button"
             onClick={onClearAll}
             title="Clear entire batch"
-            className="p-1.5 rounded-md text-[var(--muted-foreground)] hover:text-destructive hover:bg-destructive/10 transition-colors"
+            className="h-8 w-8 inline-flex items-center justify-center rounded-md text-[var(--muted-foreground)] hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
           >
             <Trash2 className="w-4 h-4" />
           </button>

@@ -34,12 +34,12 @@ export function ThreeDDropzone({ onFileSelect }: ThreeDDropzoneProps) {
   );
 
   return (
-    <div className="w-full flex flex-col justify-center items-start gap-8">
+    <div className="w-full flex flex-col justify-center items-start gap-4 sm:gap-6 md:gap-8">
       <div>
-        <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-[var(--foreground)]">
+        <h1 className="text-2xl sm:text-3xl md:text-5xl font-semibold tracking-tight text-[var(--foreground)]">
           Convert 3D models
         </h1>
-        <p className="text-sm md:text-base text-[var(--muted-foreground)] mt-2 max-w-lg leading-relaxed">
+        <p className="text-xs sm:text-sm md:text-base text-[var(--muted-foreground)] mt-1.5 sm:mt-2 max-w-lg leading-relaxed">
           Client-side converter. No file uploads, no tracking, 100% private.
         </p>
       </div>
@@ -60,12 +60,12 @@ export function ThreeDDropzone({ onFileSelect }: ThreeDDropzoneProps) {
             fileInputRef.current?.click();
           }
         }}
-        className={`w-full max-w-xl p-8 rounded-xl bg-[var(--card)] hover:bg-[var(--muted)]/70 transition-all cursor-pointer flex flex-col gap-3 group focus-visible:outline-2 focus-visible:outline-[var(--ring)] focus-visible:outline-offset-2 ${
+        className={`w-full max-w-xl p-4 sm:p-8 rounded-xl bg-[var(--card)] hover:bg-[var(--muted)]/70 transition-all cursor-pointer flex flex-col gap-3 group focus-visible:outline-2 focus-visible:outline-[var(--ring)] focus-visible:outline-offset-2 ${
           isDragging ? "bg-[var(--muted)] ring-2 ring-[var(--accent)]" : ""
         }`}
       >
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-[var(--background)] text-[var(--muted-foreground)] group-hover:text-[var(--foreground)] transition-colors">
+          <div className="p-2 rounded-lg bg-[var(--background)] text-[var(--muted-foreground)] group-hover:text-[var(--foreground)] transition-colors shrink-0">
             <UploadCloud className="w-5 h-5" />
           </div>
           <div>

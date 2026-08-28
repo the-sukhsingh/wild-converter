@@ -193,7 +193,7 @@ export function ThreeDConverter({
     <div className="relative flex-1 w-full max-w-5xl mx-auto px-4 md:px-8 overflow-hidden">
       {/* State 1: Dropzone */}
       <div
-        className={`absolute inset-0 px-4 md:px-8 py-6 flex flex-col justify-center transition-opacity duration-200 ${
+        className={`absolute inset-0 px-4 md:px-8 py-4 sm:py-6 overflow-y-auto flex flex-col justify-center transition-opacity duration-200 ${
           !isReady ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
         aria-hidden={isReady}
@@ -208,13 +208,13 @@ export function ThreeDConverter({
 
       {/* State 2: Active Workspace */}
       <div
-        className={`absolute inset-0 px-4 md:px-8 py-6 flex flex-col justify-between transition-opacity duration-200 ${
+        className={`absolute inset-0 px-4 md:px-8 py-4 sm:py-6 overflow-y-auto min-h-0 transition-opacity duration-200 ${
           isReady ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
         aria-hidden={!isReady}
       >
         {file && metadata && (
-          <div className="h-full flex flex-col justify-between gap-4">
+          <div className="min-h-full flex flex-col justify-between gap-3 sm:gap-4">
             {/* Header */}
             <ThreeDHeader metadata={metadata} onRemove={handleRemove} />
 
