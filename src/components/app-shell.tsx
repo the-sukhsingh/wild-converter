@@ -5,8 +5,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useDroppedFile } from "@/lib/dropped-file-context";
-import { HistoryPanel } from "@/components/history-panel";
-import { History } from "lucide-react";
 
 import { isAudioFile } from "@/lib/audio-format-utils";
 import { isVideoFile } from "@/lib/video-format-utils";
@@ -74,7 +72,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { setDroppedFiles } = useDroppedFile();
   const [isDragOver, setIsDragOver] = useState(false);
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   // ── Feature 1: Clipboard paste ──────────────────────────────────────────
   useEffect(() => {
@@ -213,20 +210,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           {/* Action Icons */}
           <div className="shrink-0 flex items-center gap-1">
-            <button
-              type="button"
-              id="history-panel-toggle"
-              onClick={() => setIsHistoryOpen((v) => !v)}
-              title="Conversion history"
-              aria-label="Open conversion history"
-              className={`p-2 rounded-md transition-colors ${
-                isHistoryOpen
-                  ? "bg-(--card) text-(--foreground)"
-                  : "text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted)/40"
-              }`}
-            >
-              <History className="w-4 h-4" />
-            </button>
             <ThemeToggle />
           </div>
         </div>
@@ -267,9 +250,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <span className="hidden sm:inline shrink-0">100% private · zero server uploads</span>
         </div>
       </footer>
-
-      {/* ─── History Panel ────────────────────────────────────────── */}
-      <HistoryPanel isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} />
     </div>
   );
 }

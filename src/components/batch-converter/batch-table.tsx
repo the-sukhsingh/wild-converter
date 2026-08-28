@@ -8,7 +8,6 @@ import {
   resolveOutputFilename,
 } from "@/lib/batch-converter/batch-runner";
 import { createZipArchive, downloadBlob } from "@/lib/batch-converter/zip-builder";
-import { useConversionHistory } from "@/lib/conversion-history";
 import { BatchRow } from "./batch-row";
 import { BatchToolbar } from "./batch-toolbar";
 import { BatchItemOptionsModal } from "./batch-item-options-modal";
@@ -49,7 +48,6 @@ export function BatchTable({
   const [isZipping, setIsZipping] = useState(false);
   const [zipProgress, setZipProgress] = useState(0);
   const isCancelledRef = useRef(false);
-  const { addRecord } = useConversionHistory();
 
   // Load initial files
   useEffect(() => {
@@ -183,15 +181,6 @@ export function BatchTable({
             : i
         )
       );
-      // Record in conversion history
-      addRecord({
-        category: item.category as any,
-        inputFileName: item.name,
-        outputFileName: outputName,
-        inputSize: item.size,
-        outputSize: blob.size,
-        status: "done",
-      });
     } catch (err) {
       console.error("Batch single conversion failed:", err);
       setItems((prev) =>
