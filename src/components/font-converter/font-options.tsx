@@ -19,12 +19,12 @@ export function FontOptionsPanel({
   const formatInfo = FONT_FORMATS[options.format] || FONT_FORMATS.woff2;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 py-3 border-y border-[var(--border)] min-h-[82px] items-center">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 py-3 border-y border-(--border) min-h-20.5 items-center">
       {/* Custom Family Name */}
       <div className="flex flex-col gap-1.5">
-        <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+        <div className="flex justify-between text-xs font-mono text-(--muted-foreground)">
           <span>Family Name</span>
-          <span className="font-semibold text-[var(--foreground)] truncate max-w-[120px]">
+          <span className="font-semibold text-(--foreground) truncate max-w-30">
             {options.customFontFamily || metadata?.familyName || "Original"}
           </span>
         </div>
@@ -38,7 +38,7 @@ export function FontOptionsPanel({
             })
           }
           placeholder={metadata?.familyName || "e.g. Inter"}
-          className="w-full h-8 px-2.5 text-xs font-mono bg-[var(--card)] text-[var(--foreground)] rounded-md outline-none focus:ring-1 focus:ring-[var(--ring)]"
+          className="w-full h-8 px-2.5 text-xs font-mono bg-(--card) text-(--foreground) rounded-md outline-none focus:ring-1 focus:ring-(--ring)"
         />
       </div>
 
@@ -47,8 +47,8 @@ export function FontOptionsPanel({
         <label
           className={`flex items-center gap-2 text-xs font-mono h-8 px-2.5 rounded-md cursor-pointer select-none transition-colors ${
             options.subsetAsciiOnly
-              ? "bg-[var(--primary)] text-[var(--primary-foreground)] font-medium"
-              : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+              ? "bg-(--primary) text-(--primary-foreground) font-medium"
+              : "bg-(--card) text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted)"
           }`}
         >
           <input
@@ -60,7 +60,7 @@ export function FontOptionsPanel({
                 subsetAsciiOnly: e.target.checked,
               })
             }
-            className="rounded accent-[var(--foreground)] sr-only"
+            className="rounded accent-(--foreground) sr-only"
           />
           <span>Subset ASCII Glyphs Only</span>
         </label>
@@ -71,8 +71,8 @@ export function FontOptionsPanel({
         <label
           className={`flex items-center gap-2 text-xs font-mono h-8 px-2.5 rounded-md cursor-pointer select-none transition-colors ${
             options.generateCssFace
-              ? "bg-[var(--primary)] text-[var(--primary-foreground)] font-medium"
-              : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+              ? "bg-(--primary) text-(--primary-foreground) font-medium"
+              : "bg-(--card) text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted)"
           }`}
         >
           <input
@@ -84,7 +84,7 @@ export function FontOptionsPanel({
                 generateCssFace: e.target.checked,
               })
             }
-            className="rounded accent-[var(--foreground)] sr-only"
+            className="rounded accent-(--foreground) sr-only"
           />
           <span>Generate CSS @font-face</span>
         </label>
@@ -95,8 +95,8 @@ export function FontOptionsPanel({
         <label
           className={`flex items-center gap-2 text-xs font-mono h-8 px-2.5 rounded-md cursor-pointer select-none transition-colors ${
             options.hinting
-              ? "bg-[var(--primary)] text-[var(--primary-foreground)] font-medium"
-              : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+              ? "bg-(--primary) text-(--primary-foreground) font-medium"
+              : "bg-(--card) text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted)"
           }`}
         >
           <input
@@ -108,7 +108,7 @@ export function FontOptionsPanel({
                 hinting: e.target.checked,
               })
             }
-            className="rounded accent-[var(--foreground)] sr-only"
+            className="rounded accent-(--foreground) sr-only"
           />
           <span>Preserve TrueType Hinting</span>
         </label>

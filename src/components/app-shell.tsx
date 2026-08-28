@@ -173,19 +173,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       onDragOver={handleGlobalDragOver}
       onDragLeave={handleGlobalDragLeave}
       onDrop={handleGlobalDrop}
-      className={`h-[100dvh] flex flex-col justify-between overflow-hidden bg-[var(--background)] text-[var(--foreground)] selection:bg-[var(--foreground)] selection:text-[var(--background)] relative ${
-        isDragOver ? "ring-2 ring-[var(--foreground)]/20" : ""
+      className={`h-dvh flex flex-col justify-between overflow-hidden bg-(--background) text-(--foreground) selection:bg-(--foreground) selection:text-(--background) relative ${
+        isDragOver ? "ring-2 ring-(--foreground)/20" : ""
       }`}
     >
       {/* ─── Header ───────────────────────────────────────────────── */}
-      <header className="shrink-0 border-b border-[var(--border)] bg-[var(--background)] z-50">
+      <header className="shrink-0 border-b border-(--border) bg-(--background) z-50">
         {/* Top Bar */}
         <div className="w-full max-w-5xl h-13 sm:h-14 mx-auto px-4 md:px-8 flex items-center justify-between gap-3">
           <Link href="/" className="flex items-baseline gap-1.5 shrink-0 select-none py-1">
-            <span className="font-sans font-semibold text-base sm:text-lg tracking-tight text-[var(--foreground)]">
+            <span className="font-sans font-semibold text-base sm:text-lg tracking-tight text-(--foreground)">
               wild
             </span>
-            <span className="font-mono text-xs text-[var(--muted-foreground)]">
+            <span className="font-mono text-xs text-(--muted-foreground)">
               / converter
             </span>
           </Link>
@@ -201,8 +201,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   href={cat.href}
                   className={`flex items-center justify-center py-1.5 px-2.5 rounded-md text-xs font-mono font-medium transition-colors whitespace-nowrap ${
                     isActive
-                      ? "bg-[var(--card)] text-[var(--foreground)]"
-                      : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]/40"
+                      ? "bg-(--card) text-(--foreground)"
+                      : "text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted)/40"
                   }`}
                 >
                   {cat.label}
@@ -221,8 +221,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               aria-label="Open conversion history"
               className={`p-2 rounded-md transition-colors ${
                 isHistoryOpen
-                  ? "bg-[var(--card)] text-[var(--foreground)]"
-                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]/40"
+                  ? "bg-(--card) text-(--foreground)"
+                  : "text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted)/40"
               }`}
             >
               <History className="w-4 h-4" />
@@ -232,7 +232,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Mobile Horizontal Category Scroller */}
-        <div className="sm:hidden relative border-t border-[var(--border)]/50 bg-[var(--background)]">
+        <div className="sm:hidden relative border-t border-(--border)/50 bg-(--background)">
           <nav className="flex items-center gap-1.5 overflow-x-auto no-scrollbar px-3 py-1.5">
             {CATEGORIES.map((cat) => {
               const isActive =
@@ -243,8 +243,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   href={cat.href}
                   className={`flex items-center justify-center h-7 px-2.5 rounded-full text-xs font-mono font-medium transition-colors whitespace-nowrap shrink-0 ${
                     isActive
-                      ? "bg-[var(--foreground)] text-[var(--background)] shadow-xs"
-                      : "bg-[var(--card)]/80 text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+                      ? "bg-(--foreground) text-(--background) shadow-xs"
+                      : "bg-(--card)/80 text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted)"
                   }`}
                 >
                   {cat.label}
@@ -261,9 +261,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </main>
 
       {/* ─── Footer ───────────────────────────────────────────────── */}
-      <footer className="shrink-0 h-9 sm:h-10 border-t border-[var(--border)] bg-[var(--background)] z-50">
-        <div className="w-full max-w-5xl h-full mx-auto px-4 md:px-8 flex items-center justify-between text-[11px] sm:text-xs font-mono text-[var(--muted-foreground)]">
-          <span className="truncate max-w-[280px] sm:max-w-none">wild · {engineName}</span>
+      <footer className="shrink-0 h-9 sm:h-10 border-t border-(--border) bg-(--background) z-50">
+        <div className="w-full max-w-5xl h-full mx-auto px-4 md:px-8 flex items-center justify-between text-[11px] sm:text-xs font-mono text-(--muted-foreground)">
+          <span className="truncate max-w-70 sm:max-w-none">wild · {engineName}</span>
           <span className="hidden sm:inline shrink-0">100% private · zero server uploads</span>
         </div>
       </footer>

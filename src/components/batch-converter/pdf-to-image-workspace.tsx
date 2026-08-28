@@ -128,24 +128,24 @@ export function PdfToImageWorkspace({
   return (
     <div className="flex-1 flex flex-col justify-between h-full w-full max-w-5xl mx-auto px-4 md:px-8 py-4 overflow-hidden">
       {/* ── Top Bar ── */}
-      <div className="shrink-0 flex items-center justify-between border-b border-[var(--border)] pb-3">
+      <div className="shrink-0 flex items-center justify-between border-b border-(--border) pb-3">
         <div className="flex items-center gap-3">
           {onBack && (
             <button
               type="button"
               onClick={onBack}
-              className="p-1.5 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+              className="p-1.5 rounded-md hover:bg-(--muted) text-(--muted-foreground) hover:text-(--foreground) transition-colors"
               title="Back to batch table"
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
           )}
           <div className="flex flex-col">
-            <h2 className="text-sm font-semibold font-mono text-[var(--foreground)] flex items-center gap-2">
+            <h2 className="text-sm font-semibold font-mono text-(--foreground) flex items-center gap-2">
               <FileStack className="w-4 h-4 text-blue-500" />
               <span>PDF to Image Extractor</span>
             </h2>
-            <span className="text-xs font-mono text-[var(--muted-foreground)] truncate max-w-sm">
+            <span className="text-xs font-mono text-(--muted-foreground) truncate max-w-sm">
               {pdfFile.name} ({formatFileSize(pdfFile.size)})
             </span>
           </div>
@@ -177,18 +177,18 @@ export function PdfToImageWorkspace({
       {/* ── Middle: Config + Page Grid ── */}
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 py-3 sm:py-4 overflow-y-auto lg:overflow-hidden">
         {/* Left: Configuration Panel (4 cols) */}
-        <div className="lg:col-span-4 flex flex-col gap-4 p-4 rounded-xl bg-[var(--card)]/30 border border-[var(--border)]/40 lg:overflow-y-auto">
+        <div className="lg:col-span-4 flex flex-col gap-4 p-4 rounded-xl bg-(--card)/30 border border-(--border)/40 lg:overflow-y-auto">
           <div className="flex items-center gap-2">
-            <Sliders className="w-4 h-4 text-[var(--muted-foreground)]" />
-            <h3 className="font-mono text-xs font-semibold text-[var(--foreground)] uppercase tracking-wider">
+            <Sliders className="w-4 h-4 text-(--muted-foreground)" />
+            <h3 className="font-mono text-xs font-semibold text-(--foreground) uppercase tracking-wider">
               Image Configuration
             </h3>
           </div>
 
           {/* Target Format */}
           <div className="flex flex-col gap-1.5 text-xs font-mono">
-            <span className="text-[var(--muted-foreground)]">Output Format:</span>
-            <div className="grid grid-cols-2 gap-1.5 p-1 rounded-lg bg-[var(--background)] border border-[var(--border)]">
+            <span className="text-(--muted-foreground)">Output Format:</span>
+            <div className="grid grid-cols-2 gap-1.5 p-1 rounded-lg bg-(--background) border border-(--border)">
               {(["png", "jpeg", "webp", "avif"] as const).map((fmt) => (
                 <button
                   key={fmt}
@@ -196,8 +196,8 @@ export function PdfToImageWorkspace({
                   onClick={() => setConfig({ ...config, targetFormat: fmt })}
                   className={`py-1.5 px-2 rounded-md font-medium text-[11px] uppercase transition-colors ${
                     config.targetFormat === fmt
-                      ? "bg-[var(--foreground)] text-[var(--background)]"
-                      : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                      ? "bg-(--foreground) text-(--background)"
+                      : "text-(--muted-foreground) hover:text-(--foreground)"
                   }`}
                 >
                   {fmt === "jpeg" ? "JPEG" : fmt}
@@ -208,13 +208,13 @@ export function PdfToImageWorkspace({
 
           {/* Scale / DPI */}
           <div className="flex flex-col gap-1.5 text-xs font-mono">
-            <span className="text-[var(--muted-foreground)]">Resolution / DPI:</span>
+            <span className="text-(--muted-foreground)">Resolution / DPI:</span>
             <select
               value={config.scale}
               onChange={(e) =>
                 setConfig({ ...config, scale: parseFloat(e.target.value) })
               }
-              className="w-full h-8 px-2.5 rounded-md bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)]"
+              className="w-full h-8 px-2.5 rounded-md bg-(--background) border border-(--border) text-(--foreground)"
             >
               <option value={1.0}>1x Standard (72 DPI - Fast & Light)</option>
               <option value={1.5}>1.5x Medium (110 DPI)</option>
@@ -228,8 +228,8 @@ export function PdfToImageWorkspace({
           {config.targetFormat !== "png" && (
             <div className="flex flex-col gap-1.5 text-xs font-mono">
               <div className="flex items-center justify-between">
-                <span className="text-[var(--muted-foreground)]">Quality:</span>
-                <span className="font-semibold text-[var(--foreground)]">
+                <span className="text-(--muted-foreground)">Quality:</span>
+                <span className="font-semibold text-(--foreground)">
                   {Math.round(config.quality * 100)}%
                 </span>
               </div>
@@ -249,13 +249,13 @@ export function PdfToImageWorkspace({
 
           {/* Page Range Selector */}
           <div className="flex flex-col gap-1.5 text-xs font-mono">
-            <span className="text-[var(--muted-foreground)]">Page Range:</span>
+            <span className="text-(--muted-foreground)">Page Range:</span>
             <select
               value={config.pageRange}
               onChange={(e) =>
                 setConfig({ ...config, pageRange: e.target.value as any })
               }
-              className="w-full h-8 px-2.5 rounded-md bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)] capitalize"
+              className="w-full h-8 px-2.5 rounded-md bg-(--background) border border-(--border) text-(--foreground) capitalize"
             >
               <option value="all">All Pages</option>
               <option value="first">First Page Only</option>
@@ -265,26 +265,26 @@ export function PdfToImageWorkspace({
 
           {config.pageRange === "custom" && (
             <div className="flex flex-col gap-1 text-xs font-mono">
-              <span className="text-[var(--muted-foreground)]">Enter page numbers:</span>
+              <span className="text-(--muted-foreground)">Enter page numbers:</span>
               <input
                 type="text"
                 placeholder="e.g. 1-3, 5, 8"
                 value={config.customRange}
                 onChange={(e) => setConfig({ ...config, customRange: e.target.value })}
-                className="px-2.5 py-1.5 rounded-md bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)]"
+                className="px-2.5 py-1.5 rounded-md bg-(--background) border border-(--border) text-(--foreground)"
               />
             </div>
           )}
 
           {/* Background */}
           <div className="flex flex-col gap-1.5 text-xs font-mono">
-            <span className="text-[var(--muted-foreground)]">Background:</span>
+            <span className="text-(--muted-foreground)">Background:</span>
             <select
               value={config.background}
               onChange={(e) =>
                 setConfig({ ...config, background: e.target.value as any })
               }
-              className="w-full h-8 px-2.5 rounded-md bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)] capitalize"
+              className="w-full h-8 px-2.5 rounded-md bg-(--background) border border-(--border) text-(--foreground) capitalize"
             >
               <option value="white">Solid White</option>
               {config.targetFormat !== "jpeg" && (
@@ -299,7 +299,7 @@ export function PdfToImageWorkspace({
             type="button"
             disabled={isExtracting}
             onClick={handleExtract}
-            className="mt-2 w-full py-2 px-3 text-xs font-mono font-medium rounded-md bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 transition-opacity flex items-center justify-center gap-1.5 disabled:opacity-50"
+            className="mt-2 w-full py-2 px-3 text-xs font-mono font-medium rounded-md bg-(--foreground) text-(--background) hover:opacity-90 transition-opacity flex items-center justify-center gap-1.5 disabled:opacity-50"
           >
             {isExtracting ? (
               <>
@@ -320,17 +320,17 @@ export function PdfToImageWorkspace({
           {isExtracting && renderedPages.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
               <Loader2 className="w-8 h-8 text-primary animate-spin mb-3" />
-              <p className="font-mono text-xs text-[var(--foreground)] font-medium">
+              <p className="font-mono text-xs text-(--foreground) font-medium">
                 {statusText || `Extracting pages (${progress}%)...`}
               </p>
             </div>
           ) : renderedPages.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 border border-dashed border-[var(--border)] rounded-xl text-center">
-              <FileText className="w-8 h-8 text-[var(--muted-foreground)] mb-2" />
-              <p className="font-mono text-xs text-[var(--foreground)] font-medium">
+            <div className="flex-1 flex flex-col items-center justify-center p-8 border border-dashed border-(--border) rounded-xl text-center">
+              <FileText className="w-8 h-8 text-(--muted-foreground) mb-2" />
+              <p className="font-mono text-xs text-(--foreground) font-medium">
                 No pages extracted
               </p>
-              <p className="font-mono text-[11px] text-[var(--muted-foreground)] mt-1">
+              <p className="font-mono text-[11px] text-(--muted-foreground) mt-1">
                 Adjust page range or click &quot;Update Extraction&quot; to render pages
               </p>
             </div>
@@ -339,18 +339,18 @@ export function PdfToImageWorkspace({
               {renderedPages.map((page) => (
                 <div
                   key={page.pageNumber}
-                  className="group relative flex flex-col rounded-lg border border-[var(--border)]/60 hover:border-[var(--border)] bg-[var(--card)]/40 hover:bg-[var(--card)]/80 p-2.5 transition-all"
+                  className="group relative flex flex-col rounded-lg border border-(--border)/60 hover:border-(--border) bg-(--card)/40 hover:bg-(--card)/80 p-2.5 transition-all"
                 >
                   {/* Top: Page badge & Zoom button */}
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-[var(--foreground)] text-[var(--background)]">
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-(--foreground) text-(--background)">
                       Page {page.pageNumber}
                     </span>
                     <button
                       type="button"
                       onClick={() => setPreviewPage(page)}
                       title="Enlarge preview"
-                      className="p-1 rounded text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] opacity-60 group-hover:opacity-100"
+                      className="p-1 rounded text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted) opacity-60 group-hover:opacity-100"
                     >
                       <Maximize2 className="w-3 h-3" />
                     </button>
@@ -359,7 +359,7 @@ export function PdfToImageWorkspace({
                   {/* Thumbnail */}
                   <div
                     onClick={() => setPreviewPage(page)}
-                    className="relative aspect-[3/4] w-full rounded bg-[var(--background)] border border-[var(--border)]/30 overflow-hidden flex items-center justify-center cursor-pointer"
+                    className="relative aspect-3/4 w-full rounded bg-(--background) border border-(--border)/30 overflow-hidden flex items-center justify-center cursor-pointer"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -372,22 +372,22 @@ export function PdfToImageWorkspace({
                   {/* Info: dimensions & size */}
                   <div className="flex flex-col mt-2 min-w-0">
                     <span
-                      className="font-mono text-xs font-medium text-[var(--foreground)] truncate"
+                      className="font-mono text-xs font-medium text-(--foreground) truncate"
                       title={page.name}
                     >
                       {page.name}
                     </span>
-                    <span className="font-mono text-[10px] text-[var(--muted-foreground)]">
+                    <span className="font-mono text-[10px] text-(--muted-foreground)">
                       {formatFileSize(page.size)} • {page.width}×{page.height}
                     </span>
                   </div>
 
                   {/* Single Page Download Button */}
-                  <div className="border-t border-[var(--border)]/40 pt-2 mt-2">
+                  <div className="border-t border-(--border)/40 pt-2 mt-2">
                     <button
                       type="button"
                       onClick={() => handleDownloadSingle(page)}
-                      className="w-full py-1 px-2 text-[11px] font-mono font-medium rounded bg-[var(--foreground)]/10 hover:bg-[var(--foreground)]/20 text-[var(--foreground)] transition-colors flex items-center justify-center gap-1"
+                      className="w-full py-1 px-2 text-[11px] font-mono font-medium rounded bg-(--foreground)/10 hover:bg-(--foreground)/20 text-(--foreground) transition-colors flex items-center justify-center gap-1"
                     >
                       <Download className="w-3 h-3" />
                       <span>Download Image</span>

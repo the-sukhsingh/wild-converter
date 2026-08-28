@@ -91,7 +91,7 @@ export function BatchRow({
       onDragStart={() => onDragStart(index)}
       onDragOver={(e) => { e.preventDefault(); onDragOver(index); }}
       onDragEnd={onDragEnd}
-      className={`group relative flex flex-col md:flex-row md:items-center justify-between gap-3 py-3 px-3.5 rounded-lg border border-[var(--border)]/40 hover:border-[var(--border)] bg-[var(--card)]/30 hover:bg-[var(--card)]/60 transition-all duration-150 ${
+      className={`group relative flex flex-col md:flex-row md:items-center justify-between gap-3 py-3 px-3.5 rounded-lg border border-(--border)/40 hover:border-(--border) bg-(--card)/30 hover:bg-(--card)/60 transition-all duration-150 ${
         isDragging ? "opacity-40 scale-[0.99] border-dashed" : ""
       } ${
         item.status === "converting"
@@ -105,7 +105,7 @@ export function BatchRow({
     >
       {/* ── Drag Handle ── */}
       <div
-        className="hidden md:flex shrink-0 cursor-grab active:cursor-grabbing text-[var(--border)] hover:text-[var(--muted-foreground)] transition-colors absolute left-1 top-1/2 -translate-y-1/2"
+        className="hidden md:flex shrink-0 cursor-grab active:cursor-grabbing text-(--border) hover:text-(--muted-foreground) transition-colors absolute left-1 top-1/2 -translate-y-1/2"
         title="Drag to reorder"
       >
         <GripVertical className="w-3.5 h-3.5" />
@@ -120,25 +120,25 @@ export function BatchRow({
           title="Preview file"
           className="flex items-center gap-2.5 sm:gap-3 min-w-0 md:w-5/12 text-left hover:opacity-80 transition-opacity cursor-pointer"
         >
-          <div className="shrink-0 p-2 rounded-md bg-[var(--background)] border border-[var(--border)]/30">
+          <div className="shrink-0 p-2 rounded-md bg-(--background) border border-(--border)/30">
             {getCategoryIcon(item.category)}
           </div>
 
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-2">
               <span
-                className="font-mono text-xs sm:text-sm font-medium text-[var(--foreground)] truncate"
+                className="font-mono text-xs sm:text-sm font-medium text-(--foreground) truncate"
                 title={item.name}
               >
                 {item.name}
               </span>
               {item.detectedInputFormat && (
-                <span className="shrink-0 px-1.5 py-0.2 rounded text-[10px] font-mono uppercase bg-[var(--muted)] text-[var(--muted-foreground)]">
+                <span className="shrink-0 px-1.5 py-0.2 rounded text-[10px] font-mono uppercase bg-(--muted) text-(--muted-foreground)">
                   {item.detectedInputFormat}
                 </span>
               )}
             </div>
-            <span className="font-mono text-[11px] sm:text-xs text-[var(--muted-foreground)]">
+            <span className="font-mono text-[11px] sm:text-xs text-(--muted-foreground)">
               {formatFileSize(item.size)}
             </span>
           </div>
@@ -147,15 +147,15 @@ export function BatchRow({
         {/* ── Middle: Target Format Selector + Settings Gear ── */}
         <div className="flex items-center gap-2 shrink-0 w-full md:w-3/12 justify-between md:justify-start">
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <span className="text-xs font-mono text-[var(--muted-foreground)] shrink-0">
+            <span className="text-xs font-mono text-(--muted-foreground) shrink-0">
               to:
             </span>
-            <div className="relative flex-1 min-w-[100px]">
+            <div className="relative flex-1 min-w-25">
               <select
                 value={item.targetFormat}
                 disabled={item.status === "converting" || item.status === "done"}
                 onChange={(e) => onUpdateTargetFormat(item.id, e.target.value)}
-                className="w-full h-8 px-2.5 py-1 text-xs font-mono font-medium rounded-md bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)] focus:outline-none focus:ring-1 focus:ring-[var(--ring)] disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed uppercase"
+                className="w-full h-8 px-2.5 py-1 text-xs font-mono font-medium rounded-md bg-(--background) border border-(--border) text-(--foreground) focus:outline-none focus:ring-1 focus:ring-(--ring) disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed uppercase"
               >
                 {availableFormats.map((fmt) => (
                   <option key={fmt.id} value={fmt.id}>
@@ -171,7 +171,7 @@ export function BatchRow({
             title="Conversion Settings"
             disabled={item.status === "converting"}
             onClick={() => onOpenOptions(item)}
-            className="shrink-0 p-1.5 rounded-md text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]/50 transition-colors disabled:opacity-40 cursor-pointer"
+            className="shrink-0 p-1.5 rounded-md text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted)/50 transition-colors disabled:opacity-40 cursor-pointer"
           >
             <Settings className="w-4 h-4" />
           </button>
@@ -180,14 +180,14 @@ export function BatchRow({
         {/* ── Right: Status, Progress & Action Buttons ── */}
         <div className="flex items-center justify-between md:justify-end gap-2.5 sm:gap-3 w-full md:w-4/12">
           {/* Status / Output Size Display */}
-          <div className="flex flex-col md:items-end text-left md:text-right min-w-[90px] sm:min-w-[100px]">
+          <div className="flex flex-col md:items-end text-left md:text-right min-w-22.5 sm:min-w-25">
             {item.status === "idle" && (
               <div className="flex flex-col gap-0.5">
-                <span className="text-xs font-mono text-[var(--muted-foreground)]">
+                <span className="text-xs font-mono text-(--muted-foreground)">
                   Ready
                 </span>
                 {sizeEstimate && (
-                  <span className="text-[10px] font-mono text-[var(--muted-foreground)]/60">
+                  <span className="text-[10px] font-mono text-(--muted-foreground)/60">
                     {sizeEstimate}
                   </span>
                 )}
@@ -200,14 +200,14 @@ export function BatchRow({
                   <Loader2 className="w-3 h-3 animate-spin" />
                   <span>{item.progress}%</span>
                 </div>
-                <div className="w-full h-1 bg-[var(--muted)] rounded-full overflow-hidden">
+                <div className="w-full h-1 bg-(--muted) rounded-full overflow-hidden">
                   <div
                     className="h-full bg-primary transition-all duration-300 ease-out"
                     style={{ width: `${item.progress}%` }}
                   />
                 </div>
                 {item.statusText && (
-                  <span className="text-[10px] font-mono text-[var(--muted-foreground)] truncate max-w-[80px] sm:max-w-[96px]">
+                  <span className="text-[10px] font-mono text-(--muted-foreground) truncate max-w-20 sm:max-w-24">
                     {item.statusText}
                   </span>
                 )}
@@ -225,7 +225,7 @@ export function BatchRow({
                     className={`font-mono text-[10px] px-1 py-0.2 rounded ${
                       sizeDiffPercent < 0
                         ? "text-emerald-500 bg-emerald-500/10"
-                        : "text-[var(--muted-foreground)] bg-[var(--muted)]"
+                        : "text-(--muted-foreground) bg-(--muted)"
                     }`}
                   >
                     {sizeDiffPercent > 0 ? `+${sizeDiffPercent}%` : `${sizeDiffPercent}%`}
@@ -237,7 +237,7 @@ export function BatchRow({
             {item.status === "error" && (
               <div className="flex items-center gap-1 text-xs font-mono text-destructive">
                 <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                <span className="truncate max-w-[100px] sm:max-w-[120px]" title={item.error || "Failed"}>
+                <span className="truncate max-w-25 sm:max-w-30" title={item.error || "Failed"}>
                   {item.error || "Error"}
                 </span>
               </div>
@@ -251,7 +251,7 @@ export function BatchRow({
                 type="button"
                 title="Convert this file"
                 onClick={() => onConvertSingle(item)}
-                className="h-7.5 px-2.5 py-1 text-xs font-mono font-medium rounded-md bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 transition-opacity flex items-center gap-1 cursor-pointer"
+                className="h-7.5 px-2.5 py-1 text-xs font-mono font-medium rounded-md bg-(--foreground) text-(--background) hover:opacity-90 transition-opacity flex items-center gap-1 cursor-pointer"
               >
                 <Play className="w-3 h-3 fill-current" />
                 <span>Convert</span>
@@ -287,7 +287,7 @@ export function BatchRow({
               title="Remove from batch"
               disabled={item.status === "converting"}
               onClick={() => onRemove(item.id)}
-              className="p-1.5 rounded-md text-[var(--muted-foreground)] hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-40 cursor-pointer"
+              className="p-1.5 rounded-md text-(--muted-foreground) hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-40 cursor-pointer"
             >
               <Trash2 className="w-4 h-4" />
             </button>

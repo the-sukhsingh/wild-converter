@@ -222,24 +222,24 @@ export function ImageToPdfWorkspace({
   return (
     <div className="flex-1 flex flex-col justify-between h-full w-full max-w-5xl mx-auto px-4 md:px-8 py-4 overflow-hidden">
       {/* ── Top Header Bar ── */}
-      <div className="shrink-0 flex items-center justify-between border-b border-[var(--border)] pb-3">
+      <div className="shrink-0 flex items-center justify-between border-b border-(--border) pb-3">
         <div className="flex items-center gap-3">
           {onBack && (
             <button
               type="button"
               onClick={onBack}
-              className="p-1.5 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+              className="p-1.5 rounded-md hover:bg-(--muted) text-(--muted-foreground) hover:text-(--foreground) transition-colors"
               title="Back to batch table"
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
           )}
           <div className="flex flex-col">
-            <h2 className="text-sm font-semibold font-mono text-[var(--foreground)] flex items-center gap-2">
+            <h2 className="text-sm font-semibold font-mono text-(--foreground) flex items-center gap-2">
               <FileText className="w-4 h-4 text-emerald-500" />
               <span>Image to PDF Assembly</span>
             </h2>
-            <span className="text-xs font-mono text-[var(--muted-foreground)]">
+            <span className="text-xs font-mono text-(--muted-foreground)">
               {items.length} {items.length === 1 ? "image" : "images"} · Drag or use arrows to reorder pages
             </span>
           </div>
@@ -263,7 +263,7 @@ export function ImageToPdfWorkspace({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="px-2.5 py-1 text-xs font-mono font-medium rounded-md border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--muted)] text-[var(--foreground)] transition-colors flex items-center gap-1.5"
+            className="px-2.5 py-1 text-xs font-mono font-medium rounded-md border border-(--border) bg-(--card) hover:bg-(--muted) text-(--foreground) transition-colors flex items-center gap-1.5"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Add Images</span>
@@ -276,12 +276,12 @@ export function ImageToPdfWorkspace({
         {/* Left / Main: Visual Thumbnail Grid (8 cols) */}
         <div className="lg:col-span-8 flex flex-col min-h-0 lg:h-full lg:overflow-y-auto pr-0 lg:pr-1">
           {items.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 border border-dashed border-[var(--border)] rounded-xl text-center">
-              <FileText className="w-8 h-8 text-[var(--muted-foreground)] mb-2" />
-              <p className="font-mono text-xs text-[var(--foreground)] font-medium">
+            <div className="flex-1 flex flex-col items-center justify-center p-8 border border-dashed border-(--border) rounded-xl text-center">
+              <FileText className="w-8 h-8 text-(--muted-foreground) mb-2" />
+              <p className="font-mono text-xs text-(--foreground) font-medium">
                 No images added yet
               </p>
-              <p className="font-mono text-[11px] text-[var(--muted-foreground)] mt-1">
+              <p className="font-mono text-[11px] text-(--muted-foreground) mt-1">
                 Add images to combine into a multi-page PDF document
               </p>
             </div>
@@ -302,20 +302,20 @@ export function ImageToPdfWorkspace({
                       setDraggedIdx(null);
                     }
                   }}
-                  className={`group relative flex flex-col rounded-lg border border-[var(--border)]/60 hover:border-[var(--border)] bg-[var(--card)]/40 hover:bg-[var(--card)]/80 p-2.5 transition-all select-none ${
+                  className={`group relative flex flex-col rounded-lg border border-(--border)/60 hover:border-(--border) bg-(--card)/40 hover:bg-(--card)/80 p-2.5 transition-all select-none ${
                     draggedIdx === idx ? "opacity-40 border-primary" : ""
                   }`}
                 >
                   {/* Top row: Page number & Grip */}
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-[var(--foreground)] text-[var(--background)]">
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-(--foreground) text-(--background)">
                       Page {idx + 1}
                     </span>
-                    <GripVertical className="w-3.5 h-3.5 text-[var(--muted-foreground)] opacity-40 group-hover:opacity-100 cursor-grab" />
+                    <GripVertical className="w-3.5 h-3.5 text-(--muted-foreground) opacity-40 group-hover:opacity-100 cursor-grab" />
                   </div>
 
                   {/* Thumbnail Preview with rotation applied */}
-                  <div className="relative aspect-[4/3] w-full rounded bg-[var(--background)] border border-[var(--border)]/30 overflow-hidden flex items-center justify-center">
+                  <div className="relative aspect-4/3 w-full rounded bg-(--background) border border-(--border)/30 overflow-hidden flex items-center justify-center">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={item.thumbnailUrl}
@@ -331,25 +331,25 @@ export function ImageToPdfWorkspace({
                   {/* Filename & size */}
                   <div className="flex flex-col mt-2 min-w-0">
                     <span
-                      className="font-mono text-xs font-medium text-[var(--foreground)] truncate"
+                      className="font-mono text-xs font-medium text-(--foreground) truncate"
                       title={item.name}
                     >
                       {item.name}
                     </span>
-                    <span className="font-mono text-[10px] text-[var(--muted-foreground)]">
+                    <span className="font-mono text-[10px] text-(--muted-foreground)">
                       {formatFileSize(item.size)} • {item.width}×{item.height}
                     </span>
                   </div>
 
                   {/* Card Actions: Reorder & Rotate & Delete */}
-                  <div className="flex items-center justify-between border-t border-[var(--border)]/40 pt-2 mt-2">
+                  <div className="flex items-center justify-between border-t border-(--border)/40 pt-2 mt-2">
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
                         disabled={idx === 0}
                         onClick={() => moveItem(idx, idx - 1)}
                         title="Move left / up"
-                        className="p-1 rounded text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] disabled:opacity-20"
+                        className="p-1 rounded text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted) disabled:opacity-20"
                       >
                         <ArrowLeft className="w-3 h-3" />
                       </button>
@@ -358,7 +358,7 @@ export function ImageToPdfWorkspace({
                         disabled={idx === items.length - 1}
                         onClick={() => moveItem(idx, idx + 1)}
                         title="Move right / down"
-                        className="p-1 rounded text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] disabled:opacity-20"
+                        className="p-1 rounded text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted) disabled:opacity-20"
                       >
                         <ArrowRight className="w-3 h-3" />
                       </button>
@@ -369,7 +369,7 @@ export function ImageToPdfWorkspace({
                         type="button"
                         onClick={() => rotateItem(idx)}
                         title="Rotate 90° clockwise"
-                        className="p-1 rounded text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+                        className="p-1 rounded text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted)"
                       >
                         <RotateCw className="w-3 h-3" />
                       </button>
@@ -377,7 +377,7 @@ export function ImageToPdfWorkspace({
                         type="button"
                         onClick={() => removeItem(idx)}
                         title="Remove page"
-                        className="p-1 rounded text-[var(--muted-foreground)] hover:text-destructive hover:bg-destructive/10"
+                        className="p-1 rounded text-(--muted-foreground) hover:text-destructive hover:bg-destructive/10"
                       >
                         <Trash2 className="w-3 h-3" />
                       </button>
@@ -390,22 +390,22 @@ export function ImageToPdfWorkspace({
         </div>
 
         {/* Right: PDF Settings & Layout Panel (4 cols) */}
-        <div className="lg:col-span-4 flex flex-col gap-4 p-4 rounded-xl bg-[var(--card)]/30 border border-[var(--border)]/40 overflow-y-auto">
-          <h3 className="font-mono text-xs font-semibold text-[var(--foreground)] uppercase tracking-wider">
+        <div className="lg:col-span-4 flex flex-col gap-4 p-4 rounded-xl bg-(--card)/30 border border-(--border)/40 overflow-y-auto">
+          <h3 className="font-mono text-xs font-semibold text-(--foreground) uppercase tracking-wider">
             PDF Document Settings
           </h3>
 
           {/* Merge Mode */}
           <div className="flex flex-col gap-1.5 text-xs font-mono">
-            <span className="text-[var(--muted-foreground)]">Output Mode:</span>
-            <div className="grid grid-cols-2 gap-1.5 p-1 rounded-lg bg-[var(--background)] border border-[var(--border)]">
+            <span className="text-(--muted-foreground)">Output Mode:</span>
+            <div className="grid grid-cols-2 gap-1.5 p-1 rounded-lg bg-(--background) border border-(--border)">
               <button
                 type="button"
                 onClick={() => setConfig({ ...config, mergeMode: "single-pdf" })}
                 className={`py-1.5 px-2 rounded-md font-medium text-[11px] transition-colors ${
                   config.mergeMode === "single-pdf"
-                    ? "bg-[var(--foreground)] text-[var(--background)]"
-                    : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                    ? "bg-(--foreground) text-(--background)"
+                    : "text-(--muted-foreground) hover:text-(--foreground)"
                 }`}
               >
                 Merge 1 PDF
@@ -415,8 +415,8 @@ export function ImageToPdfWorkspace({
                 onClick={() => setConfig({ ...config, mergeMode: "separate-pdfs" })}
                 className={`py-1.5 px-2 rounded-md font-medium text-[11px] transition-colors ${
                   config.mergeMode === "separate-pdfs"
-                    ? "bg-[var(--foreground)] text-[var(--background)]"
-                    : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                    ? "bg-(--foreground) text-(--background)"
+                    : "text-(--muted-foreground) hover:text-(--foreground)"
                 }`}
               >
                 Separate PDFs
@@ -426,13 +426,13 @@ export function ImageToPdfWorkspace({
 
           {/* Page Size */}
           <div className="flex flex-col gap-1.5 text-xs font-mono">
-            <span className="text-[var(--muted-foreground)]">Page Format:</span>
+            <span className="text-(--muted-foreground)">Page Format:</span>
             <select
               value={config.pageSize}
               onChange={(e) =>
                 setConfig({ ...config, pageSize: e.target.value as any })
               }
-              className="w-full h-8 px-2.5 rounded-md bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)]"
+              className="w-full h-8 px-2.5 rounded-md bg-(--background) border border-(--border) text-(--foreground)"
             >
               <option value="fit">Fit to Image (No White Borders)</option>
               <option value="a4">A4 Standard (210 × 297 mm)</option>
@@ -446,13 +446,13 @@ export function ImageToPdfWorkspace({
           {/* Orientation */}
           {config.pageSize !== "fit" && (
             <div className="flex flex-col gap-1.5 text-xs font-mono">
-              <span className="text-[var(--muted-foreground)]">Orientation:</span>
+              <span className="text-(--muted-foreground)">Orientation:</span>
               <select
                 value={config.orientation}
                 onChange={(e) =>
                   setConfig({ ...config, orientation: e.target.value as any })
                 }
-                className="w-full h-8 px-2.5 rounded-md bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)] capitalize"
+                className="w-full h-8 px-2.5 rounded-md bg-(--background) border border-(--border) text-(--foreground) capitalize"
               >
                 <option value="auto">Auto (Match Image)</option>
                 <option value="portrait">Portrait</option>
@@ -463,13 +463,13 @@ export function ImageToPdfWorkspace({
 
           {/* Margins */}
           <div className="flex flex-col gap-1.5 text-xs font-mono">
-            <span className="text-[var(--muted-foreground)]">Margins:</span>
+            <span className="text-(--muted-foreground)">Margins:</span>
             <select
               value={config.margins}
               onChange={(e) =>
                 setConfig({ ...config, margins: e.target.value as any })
               }
-              className="w-full h-8 px-2.5 rounded-md bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)] capitalize"
+              className="w-full h-8 px-2.5 rounded-md bg-(--background) border border-(--border) text-(--foreground) capitalize"
             >
               <option value="none">None (Full Bleed)</option>
               <option value="compact">Compact (Small)</option>
@@ -480,13 +480,13 @@ export function ImageToPdfWorkspace({
 
           {/* Quality */}
           <div className="flex flex-col gap-1.5 text-xs font-mono">
-            <span className="text-[var(--muted-foreground)]">Image Quality:</span>
+            <span className="text-(--muted-foreground)">Image Quality:</span>
             <select
               value={config.quality}
               onChange={(e) =>
                 setConfig({ ...config, quality: e.target.value as any })
               }
-              className="w-full h-8 px-2.5 rounded-md bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)] capitalize"
+              className="w-full h-8 px-2.5 rounded-md bg-(--background) border border-(--border) text-(--foreground) capitalize"
             >
               <option value="lossless">Lossless / Original</option>
               <option value="high">High Quality (92%)</option>
@@ -504,11 +504,11 @@ export function ImageToPdfWorkspace({
               onChange={(e) =>
                 setConfig({ ...config, includePageNumbers: e.target.checked })
               }
-              className="rounded border-[var(--border)] accent-primary cursor-pointer"
+              className="rounded border-(--border) accent-primary cursor-pointer"
             />
             <label
               htmlFor="cfg-page-numbers"
-              className="text-[var(--foreground)] cursor-pointer select-none"
+              className="text-(--foreground) cursor-pointer select-none"
             >
               Include page numbers (e.g. 1/5)
             </label>
@@ -517,8 +517,8 @@ export function ImageToPdfWorkspace({
       </div>
 
       {/* ── Bottom: Progress & Execution Bar ── */}
-      <div className="shrink-0 flex flex-col md:flex-row items-center justify-between gap-3 border-t border-[var(--border)] pt-3 bg-[var(--background)]">
-        <div className="flex items-center gap-2 text-xs font-mono text-[var(--muted-foreground)] w-full md:w-auto">
+      <div className="shrink-0 flex flex-col md:flex-row items-center justify-between gap-3 border-t border-(--border) pt-3 bg-(--background)">
+        <div className="flex items-center gap-2 text-xs font-mono text-(--muted-foreground) w-full md:w-auto">
           {isGenerating ? (
             <div className="flex items-center gap-2 text-primary font-medium">
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -570,7 +570,7 @@ export function ImageToPdfWorkspace({
             type="button"
             disabled={isGenerating || items.length === 0}
             onClick={handleGenerate}
-            className="px-4 py-2 text-xs font-mono font-semibold rounded-md bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 transition-opacity flex items-center gap-1.5 shadow-sm disabled:opacity-40"
+            className="px-4 py-2 text-xs font-mono font-semibold rounded-md bg-(--foreground) text-(--background) hover:opacity-90 transition-opacity flex items-center gap-1.5 shadow-sm disabled:opacity-40"
           >
             {isGenerating ? (
               <>

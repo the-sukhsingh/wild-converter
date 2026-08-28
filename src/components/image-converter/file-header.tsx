@@ -21,11 +21,11 @@ export function FileHeader({
   const formatLabel = inputFormat ? FORMAT_META[inputFormat]?.label : "Image";
 
   return (
-    <div className="flex flex-col gap-1.5 pb-3 border-b border-[var(--border)] w-full">
+    <div className="flex flex-col gap-1.5 pb-3 border-b border-(--border) w-full">
       {/* Top row: Filename & Actions */}
       <div className="flex items-center justify-between gap-2 min-w-0">
         <h2
-          className="text-base sm:text-lg font-semibold tracking-tight text-[var(--foreground)] truncate"
+          className="text-base sm:text-lg font-semibold tracking-tight text-(--foreground) truncate"
           title={file.name}
         >
           {file.name}
@@ -36,7 +36,7 @@ export function FileHeader({
           <button
             type="button"
             onClick={onRemove}
-            className="inline-flex items-center gap-1 text-xs font-mono text-[var(--muted-foreground)] hover:text-[var(--foreground)] px-2 py-1 rounded hover:bg-[var(--muted)]/50 transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1 text-xs font-mono text-(--muted-foreground) hover:text-(--foreground) px-2 py-1 rounded hover:bg-(--muted)/50 transition-colors cursor-pointer"
             title="Remove file"
           >
             <X className="w-3.5 h-3.5" />
@@ -46,8 +46,8 @@ export function FileHeader({
       </div>
 
       {/* Bottom row: Metadata tags */}
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-mono text-[var(--muted-foreground)]">
-        <span className="px-1.5 py-0.2 rounded bg-[var(--card)] text-[var(--foreground)] font-medium">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-mono text-(--muted-foreground)">
+        <span className="px-1.5 py-0.2 rounded bg-(--card) text-(--foreground) font-medium">
           {formatLabel}
         </span>
         <span>•</span>

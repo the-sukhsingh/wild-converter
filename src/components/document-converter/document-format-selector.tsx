@@ -41,30 +41,30 @@ export function DocumentFormatSelector({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-2 text-xs font-mono text-[var(--muted-foreground)]">
-        <span className="uppercase tracking-wider font-semibold text-[var(--foreground)]">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-2 text-xs font-mono text-(--muted-foreground)">
+        <span className="uppercase tracking-wider font-semibold text-(--foreground)">
           Convert to {targetMeta?.label}
         </span>
-        <span className="text-[var(--muted-foreground)]/80 text-[11px] sm:text-xs">
+        <span className="text-(--muted-foreground)/80 text-[11px] sm:text-xs">
           {targetMeta?.description}
         </span>
       </div>
 
       <div className="relative flex items-center">
-        <Search className="w-3.5 h-3.5 text-[var(--muted-foreground)] absolute left-3 pointer-events-none" />
+        <Search className="w-3.5 h-3.5 text-(--muted-foreground) absolute left-3 pointer-events-none" />
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Filter format (e.g. pdf, docx, xlsx, md, csv, latex, rtf)..."
-          className="w-full h-9 pl-9 pr-3 text-xs md:text-sm bg-[var(--card)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] rounded-lg outline-none focus:ring-1 focus:ring-[var(--ring)] transition-all font-sans"
+          className="w-full h-9 pl-9 pr-3 text-xs md:text-sm bg-(--card) text-(--foreground) placeholder:text-(--muted-foreground) rounded-lg outline-none focus:ring-1 focus:ring-(--ring) transition-all font-sans"
           aria-label="Filter target formats"
         />
         {searchQuery && (
           <button
             type="button"
             onClick={() => onSearchChange("")}
-            className="absolute right-2.5 text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] p-1 cursor-pointer"
+            className="absolute right-2.5 text-xs text-(--muted-foreground) hover:text-(--foreground) p-1 cursor-pointer"
           >
             ×
           </button>
@@ -88,8 +88,8 @@ export function DocumentFormatSelector({
               onClick={() => onSelectFormat(fmt.id)}
               className={`h-7.5 px-2.5 rounded-md text-xs font-mono font-medium inline-flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
                 isSelected
-                  ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs"
-                  : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+                  ? "bg-(--primary) text-(--primary-foreground) shadow-xs"
+                  : "bg-(--card) text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted)"
               }`}
               title={fmt.description}
             >

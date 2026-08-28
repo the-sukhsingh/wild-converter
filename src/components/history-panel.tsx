@@ -36,7 +36,7 @@ function getCategoryIcon(cat: string) {
     case "3d":        return <Box       className={`${cls} text-orange-500`} />;
     case "fonts":     return <Type      className={`${cls} text-pink-500`} />;
     case "archive":   return <Archive   className={`${cls} text-indigo-500`} />;
-    default:          return <FileText  className={`${cls} text-[var(--muted-foreground)]`} />;
+    default:          return <FileText  className={`${cls} text-(--muted-foreground)`} />;
   }
 }
 
@@ -61,7 +61,7 @@ function HistoryRecord({ record }: { record: ConversionRecord }) {
     : 0;
 
   return (
-    <div className="flex items-start gap-2.5 py-2.5 border-b border-[var(--border)]/50 last:border-0">
+    <div className="flex items-start gap-2.5 py-2.5 border-b border-(--border)/50 last:border-0">
       <div className="shrink-0 mt-0.5">
         {getCategoryIcon(record.category)}
       </div>
@@ -74,18 +74,18 @@ function HistoryRecord({ record }: { record: ConversionRecord }) {
             <AlertCircle className="w-3 h-3 text-destructive shrink-0" />
           )}
           <span
-            className="font-mono text-xs text-[var(--foreground)] truncate"
+            className="font-mono text-xs text-(--foreground) truncate"
             title={record.inputFileName}
           >
             {record.inputFileName}
           </span>
         </div>
 
-        <div className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-[10px] font-mono text-[var(--muted-foreground)]">
+        <div className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-[10px] font-mono text-(--muted-foreground)">
           <span>{ext(record.inputFileName)}</span>
           <ArrowRight className="w-2.5 h-2.5 shrink-0" />
           <span>{ext(record.outputFileName)}</span>
-          <span className="mx-0.5 text-[var(--border)]">·</span>
+          <span className="mx-0.5 text-(--border)">·</span>
           <span>{formatFileSize(record.inputSize)}</span>
           {record.status === "done" && (
             <>
@@ -98,7 +98,7 @@ function HistoryRecord({ record }: { record: ConversionRecord }) {
               )}
             </>
           )}
-          <span className="mx-0.5 text-[var(--border)]">·</span>
+          <span className="mx-0.5 text-(--border)">·</span>
           <span>{relativeTime(record.timestamp)}</span>
         </div>
       </div>
@@ -149,7 +149,7 @@ export function HistoryPanel({ isOpen, onClose }: HistoryPanelProps) {
       {/* Slide-in Panel */}
       <div
         ref={panelRef}
-        className={`fixed top-0 right-0 z-50 h-full w-full max-w-[320px] sm:max-w-sm bg-[var(--background)] border-l border-[var(--border)] shadow-2xl flex flex-col transition-transform duration-250 ease-out ${
+        className={`fixed top-0 right-0 z-50 h-full w-full max-w-80 sm:max-w-sm bg-(--background) border-l border-(--border) shadow-2xl flex flex-col transition-transform duration-250 ease-out ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
         role="dialog"
@@ -157,14 +157,14 @@ export function HistoryPanel({ isOpen, onClose }: HistoryPanelProps) {
         aria-modal="true"
       >
         {/* Panel Header */}
-        <div className="flex items-center justify-between px-5 h-14 border-b border-[var(--border)] shrink-0">
+        <div className="flex items-center justify-between px-5 h-14 border-b border-(--border) shrink-0">
           <div className="flex items-center gap-2">
-            <History className="w-4 h-4 text-[var(--muted-foreground)]" />
-            <span className="font-mono text-sm font-semibold text-[var(--foreground)]">
+            <History className="w-4 h-4 text-(--muted-foreground)" />
+            <span className="font-mono text-sm font-semibold text-(--foreground)">
               History
             </span>
             {records.length > 0 && (
-              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-[var(--muted)] text-[var(--muted-foreground)]">
+              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-(--muted) text-(--muted-foreground)">
                 {records.length}
               </span>
             )}
@@ -176,7 +176,7 @@ export function HistoryPanel({ isOpen, onClose }: HistoryPanelProps) {
                 type="button"
                 onClick={clearHistory}
                 title="Clear history"
-                className="p-1.5 rounded-md text-[var(--muted-foreground)] hover:text-destructive hover:bg-destructive/10 transition-colors"
+                className="p-1.5 rounded-md text-(--muted-foreground) hover:text-destructive hover:bg-destructive/10 transition-colors"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -184,7 +184,7 @@ export function HistoryPanel({ isOpen, onClose }: HistoryPanelProps) {
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded-md text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors"
+              className="p-1.5 rounded-md text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted) transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
@@ -195,8 +195,8 @@ export function HistoryPanel({ isOpen, onClose }: HistoryPanelProps) {
         <div className="flex-1 min-h-0 overflow-y-auto px-5">
           {records.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 py-12 text-center">
-              <History className="w-8 h-8 text-[var(--border)]" />
-              <p className="font-mono text-xs text-[var(--muted-foreground)]">
+              <History className="w-8 h-8 text-(--border)" />
+              <p className="font-mono text-xs text-(--muted-foreground)">
                 No conversions yet.
                 <br />
                 Convert a file to see it here.
@@ -213,8 +213,8 @@ export function HistoryPanel({ isOpen, onClose }: HistoryPanelProps) {
 
         {/* Footer note */}
         {records.length > 0 && (
-          <div className="px-5 py-3 border-t border-[var(--border)] shrink-0">
-            <p className="font-mono text-[10px] text-[var(--muted-foreground)] text-center">
+          <div className="px-5 py-3 border-t border-(--border) shrink-0">
+            <p className="font-mono text-[10px] text-(--muted-foreground) text-center">
               Session history · {records.length} conversion{records.length !== 1 ? "s" : ""}
             </p>
           </div>

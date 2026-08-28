@@ -32,13 +32,13 @@ export function DocumentOptionsPanel({
   const latexClass = options.latexClass || "article";
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 py-3 border-y border-[var(--border)] min-h-[82px] items-center">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 py-3 border-y border-(--border) min-h-20.5 items-center">
       {/* Column 1 */}
       {isPdf ? (
         <div className="flex flex-col gap-1.5">
-          <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+          <div className="flex justify-between text-xs font-mono text-(--muted-foreground)">
             <span>Page Size & Orientation</span>
-            <span className="font-semibold text-[var(--foreground)] uppercase tabular-nums">
+            <span className="font-semibold text-(--foreground) uppercase tabular-nums">
               {pageSize} · {orientation}
             </span>
           </div>
@@ -50,14 +50,14 @@ export function DocumentOptionsPanel({
                 onClick={() => onOptionsChange({ ...options, pdfPageSize: s })}
                 className={`h-7.5 px-2.5 rounded-md text-xs font-mono font-medium uppercase transition-all cursor-pointer shrink-0 ${
                   pageSize === s
-                    ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs"
-                    : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+                    ? "bg-(--primary) text-(--primary-foreground) shadow-xs"
+                    : "bg-(--card) text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted)"
                 }`}
               >
                 {s}
               </button>
             ))}
-            <span className="text-xs text-[var(--muted-foreground)] mx-0.5 shrink-0 hidden sm:inline">•</span>
+            <span className="text-xs text-(--muted-foreground) mx-0.5 shrink-0 hidden sm:inline">•</span>
             {(["portrait", "landscape"] as const).map((o) => (
               <button
                 key={o}
@@ -65,8 +65,8 @@ export function DocumentOptionsPanel({
                 onClick={() => onOptionsChange({ ...options, pdfOrientation: o })}
                 className={`h-7.5 px-2.5 rounded-md text-xs font-mono font-medium capitalize transition-all cursor-pointer shrink-0 ${
                   orientation === o
-                    ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs"
-                    : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+                    ? "bg-(--primary) text-(--primary-foreground) shadow-xs"
+                    : "bg-(--card) text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted)"
                 }`}
               >
                 {o}
@@ -76,9 +76,9 @@ export function DocumentOptionsPanel({
         </div>
       ) : isDocx ? (
         <div className="flex flex-col gap-1.5">
-          <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+          <div className="flex justify-between text-xs font-mono text-(--muted-foreground)">
             <span>Typography Font</span>
-            <span className="font-semibold text-[var(--foreground)] capitalize">
+            <span className="font-semibold text-(--foreground) capitalize">
               {docxFont === "sans" ? "Sans (Arial)" : docxFont === "serif" ? "Serif (Georgia)" : "Mono (Courier)"}
             </span>
           </div>
@@ -90,8 +90,8 @@ export function DocumentOptionsPanel({
                 onClick={() => onOptionsChange({ ...options, docxFontFamily: f })}
                 className={`h-7.5 px-3 rounded-md text-xs font-mono font-medium capitalize transition-all cursor-pointer shrink-0 ${
                   docxFont === f
-                    ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs"
-                    : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+                    ? "bg-(--primary) text-(--primary-foreground) shadow-xs"
+                    : "bg-(--card) text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted)"
                 }`}
               >
                 {f === "sans" ? "Sans (Arial)" : f === "serif" ? "Serif (Georgia)" : "Mono"}
@@ -101,9 +101,9 @@ export function DocumentOptionsPanel({
         </div>
       ) : isSpreadsheet ? (
         <div className="flex flex-col gap-1.5">
-          <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+          <div className="flex justify-between text-xs font-mono text-(--muted-foreground)">
             <span>Delimiter & Structure</span>
-            <span className="font-semibold text-[var(--foreground)]">
+            <span className="font-semibold text-(--foreground)">
               {targetFormat === "csv" ? (delimiter === "," ? "Comma (,)" : delimiter === ";" ? "Semicolon (;)" : "Tab") : "Multi-Sheet Grid"}
             </span>
           </div>
@@ -125,15 +125,15 @@ export function DocumentOptionsPanel({
                   }
                   className={`h-7.5 px-2.5 rounded-md text-xs font-mono font-medium transition-all cursor-pointer shrink-0 ${
                     delimiter === d.value
-                      ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs"
-                      : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+                      ? "bg-(--primary) text-(--primary-foreground) shadow-xs"
+                      : "bg-(--card) text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted)"
                   }`}
                 >
                   {d.label}
                 </button>
               ))
             ) : (
-              <span className="text-xs font-mono text-[var(--muted-foreground)] py-1">
+              <span className="text-xs font-mono text-(--muted-foreground) py-1">
                 Standard SheetJS workbook formatting with cell grid mapping.
               </span>
             )}
@@ -141,17 +141,17 @@ export function DocumentOptionsPanel({
         </div>
       ) : isHtml ? (
         <div className="flex flex-col gap-1.5">
-          <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+          <div className="flex justify-between text-xs font-mono text-(--muted-foreground)">
             <span>HTML Document Format</span>
-            <span className="font-semibold text-[var(--foreground)]">Semantic HTML5</span>
+            <span className="font-semibold text-(--foreground)">Semantic HTML5</span>
           </div>
-          <span className="text-xs font-mono text-[var(--muted-foreground)] py-1">
+          <span className="text-xs font-mono text-(--muted-foreground) py-1">
             Standard clean semantic tags with full AST preservation.
           </span>
         </div>
       ) : (
-        <div className="flex flex-col justify-center gap-1 text-xs font-mono text-[var(--muted-foreground)]">
-          <span className="font-semibold text-[var(--foreground)]">Standard Document Encoding</span>
+        <div className="flex flex-col justify-center gap-1 text-xs font-mono text-(--muted-foreground)">
+          <span className="font-semibold text-(--foreground)">Standard Document Encoding</span>
           <span>Preserves document AST structure, headings, lists, tables, and code.</span>
         </div>
       )}
@@ -159,9 +159,9 @@ export function DocumentOptionsPanel({
       {/* Column 2 */}
       {isPdf ? (
         <div className="flex flex-col gap-1.5">
-          <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+          <div className="flex justify-between text-xs font-mono text-(--muted-foreground)">
             <span>Layout Margins & Headers</span>
-            <span className="font-semibold text-[var(--foreground)] capitalize">
+            <span className="font-semibold text-(--foreground) capitalize">
               {margins} margins
             </span>
           </div>
@@ -173,14 +173,14 @@ export function DocumentOptionsPanel({
                 onClick={() => onOptionsChange({ ...options, pdfMargins: m })}
                 className={`h-7.5 px-2.5 rounded-md text-xs font-mono font-medium capitalize transition-all cursor-pointer shrink-0 ${
                   margins === m
-                    ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs"
-                    : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+                    ? "bg-(--primary) text-(--primary-foreground) shadow-xs"
+                    : "bg-(--card) text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted)"
                 }`}
               >
                 {m}
               </button>
             ))}
-            <span className="text-xs text-[var(--muted-foreground)] mx-0.5 shrink-0 hidden sm:inline">•</span>
+            <span className="text-xs text-(--muted-foreground) mx-0.5 shrink-0 hidden sm:inline">•</span>
             <button
               type="button"
               onClick={() =>
@@ -191,8 +191,8 @@ export function DocumentOptionsPanel({
               }
               className={`h-7.5 px-2.5 rounded-md text-xs font-mono font-medium transition-all cursor-pointer shrink-0 ${
                 options.pdfPageNumbers ?? true
-                  ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs"
-                  : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+                  ? "bg-(--primary) text-(--primary-foreground) shadow-xs"
+                  : "bg-(--card) text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted)"
               }`}
             >
               Page Numbers: {options.pdfPageNumbers ?? true ? "On" : "Off"}
@@ -201,19 +201,19 @@ export function DocumentOptionsPanel({
         </div>
       ) : isDocx ? (
         <div className="flex flex-col gap-1.5">
-          <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+          <div className="flex justify-between text-xs font-mono text-(--muted-foreground)">
             <span>OpenXML Formatting</span>
-            <span className="font-semibold text-[var(--foreground)]">Standard DOCX</span>
+            <span className="font-semibold text-(--foreground)">Standard DOCX</span>
           </div>
-          <span className="text-xs font-mono text-[var(--muted-foreground)] py-1">
+          <span className="text-xs font-mono text-(--muted-foreground) py-1">
             Generates standard OOXML document compatible with MS Word & LibreOffice.
           </span>
         </div>
       ) : isHtml ? (
         <div className="flex flex-col gap-1.5">
-          <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+          <div className="flex justify-between text-xs font-mono text-(--muted-foreground)">
             <span>Responsive Styling</span>
-            <span className="font-semibold text-[var(--foreground)]">
+            <span className="font-semibold text-(--foreground)">
               {options.includeStyling !== false ? "Embedded CSS" : "Plain HTML"}
             </span>
           </div>
@@ -228,8 +228,8 @@ export function DocumentOptionsPanel({
               }
               className={`h-7.5 px-3 rounded-md text-xs font-mono font-medium transition-all cursor-pointer shrink-0 ${
                 options.includeStyling !== false
-                  ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs"
-                  : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+                  ? "bg-(--primary) text-(--primary-foreground) shadow-xs"
+                  : "bg-(--card) text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted)"
               }`}
             >
               Responsive Typography CSS: {options.includeStyling !== false ? "Included" : "None"}
@@ -238,9 +238,9 @@ export function DocumentOptionsPanel({
         </div>
       ) : isLatex ? (
         <div className="flex flex-col gap-1.5">
-          <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+          <div className="flex justify-between text-xs font-mono text-(--muted-foreground)">
             <span>Document Class</span>
-            <span className="font-semibold text-[var(--foreground)] capitalize">
+            <span className="font-semibold text-(--foreground) capitalize">
               {latexClass}
             </span>
           </div>
@@ -252,8 +252,8 @@ export function DocumentOptionsPanel({
                 onClick={() => onOptionsChange({ ...options, latexClass: cls })}
                 className={`h-7.5 px-2.5 rounded-md text-xs font-mono font-medium capitalize transition-all cursor-pointer shrink-0 ${
                   latexClass === cls
-                    ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs"
-                    : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+                    ? "bg-(--primary) text-(--primary-foreground) shadow-xs"
+                    : "bg-(--card) text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted)"
                 }`}
               >
                 {cls}
@@ -262,8 +262,8 @@ export function DocumentOptionsPanel({
           </div>
         </div>
       ) : (
-        <div className="flex flex-col justify-center gap-1 text-xs font-mono text-[var(--muted-foreground)]">
-          <span className="font-semibold text-[var(--foreground)]">Zero Server Uploads</span>
+        <div className="flex flex-col justify-center gap-1 text-xs font-mono text-(--muted-foreground)">
+          <span className="font-semibold text-(--foreground)">Zero Server Uploads</span>
           <span>100% processed in your browser client via WebAssembly.</span>
         </div>
       )}

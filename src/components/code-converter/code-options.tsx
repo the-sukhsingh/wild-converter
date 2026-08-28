@@ -19,24 +19,24 @@ export function CodeOptionsPanel({
   const formatInfo = CODE_FORMATS[options.format] || CODE_FORMATS.ts;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 py-3 border-y border-[var(--border)] min-h-[82px] items-center">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 py-3 border-y border-(--border) min-h-20.5 items-center">
       {/* Indentation */}
       <div className="flex flex-col gap-1.5">
-        <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+        <div className="flex justify-between text-xs font-mono text-(--muted-foreground)">
           <span>Indentation</span>
-          <span className="font-semibold text-[var(--foreground)]">
+          <span className="font-semibold text-(--foreground)">
             {options.indentation === "tab" ? "Tab (\\t)" : `${options.indentation} Spaces`}
           </span>
         </div>
-        <div className="grid grid-cols-3 gap-1 bg-[var(--card)] p-0.5 rounded-md h-8 items-center text-center">
+        <div className="grid grid-cols-3 gap-1 bg-(--card) p-0.5 rounded-md h-8 items-center text-center">
           <button
             type="button"
             disabled={options.minify}
             onClick={() => onOptionsChange({ ...options, indentation: 2 })}
             className={`h-7 text-xs font-mono rounded transition-colors cursor-pointer disabled:opacity-30 ${
               options.indentation === 2 && !options.minify
-                ? "bg-[var(--foreground)] text-[var(--background)] font-medium"
-                : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                ? "bg-(--foreground) text-(--background) font-medium"
+                : "text-(--muted-foreground) hover:text-(--foreground)"
             }`}
           >
             2 sp
@@ -47,8 +47,8 @@ export function CodeOptionsPanel({
             onClick={() => onOptionsChange({ ...options, indentation: 4 })}
             className={`h-7 text-xs font-mono rounded transition-colors cursor-pointer disabled:opacity-30 ${
               options.indentation === 4 && !options.minify
-                ? "bg-[var(--foreground)] text-[var(--background)] font-medium"
-                : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                ? "bg-(--foreground) text-(--background) font-medium"
+                : "text-(--muted-foreground) hover:text-(--foreground)"
             }`}
           >
             4 sp
@@ -59,8 +59,8 @@ export function CodeOptionsPanel({
             onClick={() => onOptionsChange({ ...options, indentation: "tab" })}
             className={`h-7 text-xs font-mono rounded transition-colors cursor-pointer disabled:opacity-30 ${
               options.indentation === "tab" && !options.minify
-                ? "bg-[var(--foreground)] text-[var(--background)] font-medium"
-                : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                ? "bg-(--foreground) text-(--background) font-medium"
+                : "text-(--muted-foreground) hover:text-(--foreground)"
             }`}
           >
             Tab
@@ -73,8 +73,8 @@ export function CodeOptionsPanel({
         <label
           className={`flex items-center gap-2 text-xs font-mono h-8 px-2.5 rounded-md cursor-pointer select-none transition-colors ${
             options.minify
-              ? "bg-[var(--primary)] text-[var(--primary-foreground)] font-medium"
-              : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+              ? "bg-(--primary) text-(--primary-foreground) font-medium"
+              : "bg-(--card) text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted)"
           }`}
         >
           <input
@@ -83,7 +83,7 @@ export function CodeOptionsPanel({
             onChange={(e) =>
               onOptionsChange({ ...options, minify: e.target.checked })
             }
-            className="rounded accent-[var(--foreground)] sr-only"
+            className="rounded accent-(--foreground) sr-only"
           />
           <span>Minify & Compress Source</span>
         </label>
@@ -94,8 +94,8 @@ export function CodeOptionsPanel({
         <label
           className={`flex items-center gap-2 text-xs font-mono h-8 px-2.5 rounded-md cursor-pointer select-none transition-colors ${
             options.stripComments
-              ? "bg-[var(--primary)] text-[var(--primary-foreground)] font-medium"
-              : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+              ? "bg-(--primary) text-(--primary-foreground) font-medium"
+              : "bg-(--card) text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted)"
           }`}
         >
           <input
@@ -104,7 +104,7 @@ export function CodeOptionsPanel({
             onChange={(e) =>
               onOptionsChange({ ...options, stripComments: e.target.checked })
             }
-            className="rounded accent-[var(--foreground)] sr-only"
+            className="rounded accent-(--foreground) sr-only"
           />
           <span>Strip Code Comments</span>
         </label>
@@ -115,8 +115,8 @@ export function CodeOptionsPanel({
         <label
           className={`flex items-center gap-2 text-xs font-mono h-8 px-2.5 rounded-md cursor-pointer select-none transition-colors ${
             options.addLineNumbers
-              ? "bg-[var(--primary)] text-[var(--primary-foreground)] font-medium"
-              : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+              ? "bg-(--primary) text-(--primary-foreground) font-medium"
+              : "bg-(--card) text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted)"
           }`}
         >
           <input
@@ -125,7 +125,7 @@ export function CodeOptionsPanel({
             onChange={(e) =>
               onOptionsChange({ ...options, addLineNumbers: e.target.checked })
             }
-            className="rounded accent-[var(--foreground)] sr-only"
+            className="rounded accent-(--foreground) sr-only"
           />
           <span>Prepend Line Numbers</span>
         </label>

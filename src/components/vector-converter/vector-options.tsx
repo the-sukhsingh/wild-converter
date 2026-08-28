@@ -20,17 +20,17 @@ export function VectorOptionsPanel({
   const isRaster = formatInfo.category === "rasterize";
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 py-3 border-y border-[var(--border)] min-h-[82px] items-center">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 py-3 border-y border-(--border) min-h-20.5 items-center">
       {/* Raster Scale Preset or DPI */}
       {isRaster ? (
         <div className="flex flex-col gap-1.5">
-          <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+          <div className="flex justify-between text-xs font-mono text-(--muted-foreground)">
             <span>Render Scale</span>
-            <span className="font-semibold text-[var(--foreground)]">
+            <span className="font-semibold text-(--foreground)">
               {options.scale}x ({options.dpi} DPI)
             </span>
           </div>
-          <div className="grid grid-cols-4 gap-1 bg-[var(--card)] p-0.5 rounded-md h-8 items-center text-center">
+          <div className="grid grid-cols-4 gap-1 bg-(--card) p-0.5 rounded-md h-8 items-center text-center">
             {([1, 2, 4, 8] as const).map((scl) => (
               <button
                 key={scl}
@@ -44,8 +44,8 @@ export function VectorOptionsPanel({
                 }
                 className={`h-7 text-xs font-mono rounded transition-colors cursor-pointer ${
                   options.scale === scl
-                    ? "bg-[var(--foreground)] text-[var(--background)] font-medium"
-                    : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                    ? "bg-(--foreground) text-(--background) font-medium"
+                    : "text-(--muted-foreground) hover:text-(--foreground)"
                 }`}
               >
                 {scl}x
@@ -55,9 +55,9 @@ export function VectorOptionsPanel({
         </div>
       ) : (
         <div className="flex flex-col gap-1.5">
-          <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+          <div className="flex justify-between text-xs font-mono text-(--muted-foreground)">
             <span>Coordinate Precision</span>
-            <span className="font-semibold text-[var(--foreground)]">
+            <span className="font-semibold text-(--foreground)">
               High (Floating Point)
             </span>
           </div>
@@ -69,7 +69,7 @@ export function VectorOptionsPanel({
                 dxfVersion: e.target.value as "R12" | "R2000",
               })
             }
-            className="w-full h-8 px-2.5 text-xs font-mono bg-[var(--card)] text-[var(--foreground)] rounded-md outline-none focus:ring-1 focus:ring-[var(--ring)] cursor-pointer"
+            className="w-full h-8 px-2.5 text-xs font-mono bg-(--card) text-(--foreground) rounded-md outline-none focus:ring-1 focus:ring-(--ring) cursor-pointer"
           >
             <option value="R2000">AutoCAD 2000 / Modern DXF</option>
             <option value="R12">AutoCAD Release 12 (CNC / Legacy)</option>
@@ -80,13 +80,13 @@ export function VectorOptionsPanel({
       {/* Background Fill (for raster) or Preserve Aspect */}
       {isRaster ? (
         <div className="flex flex-col gap-1.5">
-          <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+          <div className="flex justify-between text-xs font-mono text-(--muted-foreground)">
             <span>Background</span>
-            <span className="font-semibold text-[var(--foreground)]">
+            <span className="font-semibold text-(--foreground)">
               {options.background === "transparent" ? "Alpha" : "White"}
             </span>
           </div>
-          <div className="grid grid-cols-2 gap-1 bg-[var(--card)] p-0.5 rounded-md h-8 items-center text-center">
+          <div className="grid grid-cols-2 gap-1 bg-(--card) p-0.5 rounded-md h-8 items-center text-center">
             <button
               type="button"
               onClick={() =>
@@ -94,8 +94,8 @@ export function VectorOptionsPanel({
               }
               className={`h-7 text-xs font-mono rounded transition-colors cursor-pointer ${
                 options.background === "transparent"
-                  ? "bg-[var(--foreground)] text-[var(--background)] font-medium"
-                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                  ? "bg-(--foreground) text-(--background) font-medium"
+                  : "text-(--muted-foreground) hover:text-(--foreground)"
               }`}
             >
               Transparent
@@ -107,8 +107,8 @@ export function VectorOptionsPanel({
               }
               className={`h-7 text-xs font-mono rounded transition-colors cursor-pointer ${
                 options.background === "white"
-                  ? "bg-[var(--foreground)] text-[var(--background)] font-medium"
-                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                  ? "bg-(--foreground) text-(--background) font-medium"
+                  : "text-(--muted-foreground) hover:text-(--foreground)"
               }`}
             >
               White #FFF
@@ -117,13 +117,13 @@ export function VectorOptionsPanel({
         </div>
       ) : (
         <div className="flex flex-col gap-1.5">
-          <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+          <div className="flex justify-between text-xs font-mono text-(--muted-foreground)">
             <span>PostScript Standard</span>
-            <span className="font-semibold text-[var(--foreground)]">
+            <span className="font-semibold text-(--foreground)">
               Level 3 / AI 8.0
             </span>
           </div>
-          <div className="flex items-center h-8 px-2.5 text-xs font-mono bg-[var(--card)] text-[var(--muted-foreground)] rounded-md">
+          <div className="flex items-center h-8 px-2.5 text-xs font-mono bg-(--card) text-(--muted-foreground) rounded-md">
             Vector PostScript Compiler
           </div>
         </div>
@@ -131,9 +131,9 @@ export function VectorOptionsPanel({
 
       {/* Target Render Size */}
       <div className="flex flex-col gap-1.5">
-        <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+        <div className="flex justify-between text-xs font-mono text-(--muted-foreground)">
           <span>Target Canvas</span>
-          <span className="text-[var(--foreground)]">
+          <span className="text-(--foreground)">
             {metadata
               ? `${Math.round(metadata.width * options.scale)} × ${Math.round(
                   metadata.height * options.scale
@@ -141,7 +141,7 @@ export function VectorOptionsPanel({
               : "—"}
           </span>
         </div>
-        <div className="flex items-center h-8 px-2.5 text-xs font-mono bg-[var(--card)] text-[var(--muted-foreground)] rounded-md">
+        <div className="flex items-center h-8 px-2.5 text-xs font-mono bg-(--card) text-(--muted-foreground) rounded-md">
           {metadata ? `${metadata.pathCount} vector paths compiled` : "Vector AST"}
         </div>
       </div>
@@ -151,8 +151,8 @@ export function VectorOptionsPanel({
         <label
           className={`flex items-center gap-2 text-xs font-mono h-8 px-2.5 rounded-md cursor-pointer select-none transition-colors ${
             options.optimizeSvg
-              ? "bg-[var(--primary)] text-[var(--primary-foreground)] font-medium"
-              : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+              ? "bg-(--primary) text-(--primary-foreground) font-medium"
+              : "bg-(--card) text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted)"
           }`}
         >
           <input
@@ -161,7 +161,7 @@ export function VectorOptionsPanel({
             onChange={(e) =>
               onOptionsChange({ ...options, optimizeSvg: e.target.checked })
             }
-            className="rounded accent-[var(--foreground)] sr-only"
+            className="rounded accent-(--foreground) sr-only"
           />
           <span>Optimize Vector Curves & Clean AST</span>
         </label>

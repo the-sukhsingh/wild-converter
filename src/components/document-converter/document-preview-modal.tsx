@@ -27,29 +27,29 @@ export function DocumentPreviewModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-[var(--background)]/80 backdrop-blur-sm">
-      <div className="w-full max-w-4xl h-[90vh] sm:h-[85vh] bg-[var(--background)] border border-[var(--border)] rounded-xl flex flex-col overflow-hidden shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-(--background)/80 backdrop-blur-sm">
+      <div className="w-full max-w-4xl h-[90vh] sm:h-[85vh] bg-(--background) border border-(--border) rounded-xl flex flex-col overflow-hidden shadow-2xl">
         {/* Modal Header */}
-        <div className="shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 sm:px-6 py-3 border-b border-[var(--border)]">
+        <div className="shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 sm:px-6 py-3 border-b border-(--border)">
           <div className="flex items-baseline gap-2 min-w-0">
-            <span className="font-mono font-medium text-xs sm:text-sm text-[var(--foreground)] truncate max-w-[200px] sm:max-w-md">
+            <span className="font-mono font-medium text-xs sm:text-sm text-(--foreground) truncate max-w-50 sm:max-w-md">
               {documentIR.title || "Document Preview"}
             </span>
-            <span className="text-[11px] sm:text-xs font-mono text-[var(--muted-foreground)] shrink-0">
+            <span className="text-[11px] sm:text-xs font-mono text-(--muted-foreground) shrink-0">
               ({documentIR.metadata.wordCount.toLocaleString()} words)
             </span>
           </div>
 
           <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
             {/* View Switcher */}
-            <div className="flex items-center bg-[var(--card)] p-0.5 rounded text-xs font-mono border border-[var(--border)]/40">
+            <div className="flex items-center bg-(--card) p-0.5 rounded text-xs font-mono border border-(--border)/40">
               <button
                 type="button"
                 onClick={() => setViewMode("formatted")}
                 className={`flex items-center gap-1 px-2 py-1 rounded transition-colors cursor-pointer ${
                   viewMode === "formatted"
-                    ? "bg-[var(--foreground)] text-[var(--background)] font-medium"
-                    : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                    ? "bg-(--foreground) text-(--background) font-medium"
+                    : "text-(--muted-foreground) hover:text-(--foreground)"
                 }`}
               >
                 <FileText className="w-3 h-3" />
@@ -60,8 +60,8 @@ export function DocumentPreviewModal({
                 onClick={() => setViewMode("raw")}
                 className={`flex items-center gap-1 px-2 py-1 rounded transition-colors cursor-pointer ${
                   viewMode === "raw"
-                    ? "bg-[var(--foreground)] text-[var(--background)] font-medium"
-                    : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                    ? "bg-(--foreground) text-(--background) font-medium"
+                    : "text-(--muted-foreground) hover:text-(--foreground)"
                 }`}
               >
                 <Code className="w-3 h-3" />
@@ -74,7 +74,7 @@ export function DocumentPreviewModal({
               <button
                 type="button"
                 onClick={handleCopy}
-                className="p-1.5 rounded text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors cursor-pointer"
+                className="p-1.5 rounded text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted) transition-colors cursor-pointer"
                 title="Copy Text"
               >
                 {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
@@ -84,7 +84,7 @@ export function DocumentPreviewModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1.5 rounded text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors cursor-pointer"
+                className="p-1.5 rounded text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted) transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -100,7 +100,7 @@ export function DocumentPreviewModal({
               dangerouslySetInnerHTML={{ __html: documentIR.html || `<p>${documentIR.rawText}</p>` }}
             />
           ) : (
-            <pre className="font-mono text-xs sm:text-sm text-[var(--foreground)] whitespace-pre-wrap break-words leading-relaxed">
+            <pre className="font-mono text-xs sm:text-sm text-(--foreground) whitespace-pre-wrap wrap-break-word leading-relaxed">
               {documentIR.rawText}
             </pre>
           )}

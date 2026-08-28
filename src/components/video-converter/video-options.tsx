@@ -21,13 +21,13 @@ export function VideoOptionsPanel({
   const isGif = options.format === "gif";
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 py-3 border-y border-[var(--border)] min-h-[82px] items-center">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 py-3 border-y border-(--border) min-h-20.5 items-center">
       {/* Slot 1: Target Resolution or Audio Bitrate */}
       {!isAudioOnly ? (
         <div className="flex flex-col gap-1.5">
-          <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+          <div className="flex justify-between text-xs font-mono text-(--muted-foreground)">
             <span>Resolution</span>
-            <span className="font-semibold text-[var(--foreground)] uppercase tabular-nums">
+            <span className="font-semibold text-(--foreground) uppercase tabular-nums">
               {options.resolution.toUpperCase()}
             </span>
           </div>
@@ -39,7 +39,7 @@ export function VideoOptionsPanel({
                 resolution: e.target.value as VideoConversionOptions["resolution"],
               })
             }
-            className="w-full h-8 px-2.5 text-xs font-mono bg-[var(--card)] text-[var(--foreground)] rounded-md outline-none focus:ring-1 focus:ring-[var(--ring)] cursor-pointer"
+            className="w-full h-8 px-2.5 text-xs font-mono bg-(--card) text-(--foreground) rounded-md outline-none focus:ring-1 focus:ring-(--ring) cursor-pointer"
           >
             <option value="original">Original ({metadata ? `${metadata.width}×${metadata.height}` : "Source"})</option>
             <option value="1080p">1080p Full HD</option>
@@ -50,11 +50,11 @@ export function VideoOptionsPanel({
         </div>
       ) : (
         <div className="flex flex-col gap-1.5">
-          <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+          <div className="flex justify-between text-xs font-mono text-(--muted-foreground)">
             <span>Encoding Quality</span>
-            <span className="font-semibold text-[var(--foreground)]">High Spec</span>
+            <span className="font-semibold text-(--foreground)">High Spec</span>
           </div>
-          <div className="flex items-center text-xs font-mono bg-[var(--card)] h-8 px-2.5 rounded-md text-[var(--foreground)]">
+          <div className="flex items-center text-xs font-mono bg-(--card) h-8 px-2.5 rounded-md text-(--foreground)">
             192 kbps Direct Transcode
           </div>
         </div>
@@ -63,9 +63,9 @@ export function VideoOptionsPanel({
       {/* Slot 2: Frame Rate or Audio Sample Rate */}
       {!isAudioOnly ? (
         <div className="flex flex-col gap-1.5">
-          <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+          <div className="flex justify-between text-xs font-mono text-(--muted-foreground)">
             <span>Frame Rate</span>
-            <span className="font-semibold text-[var(--foreground)] tabular-nums">
+            <span className="font-semibold text-(--foreground) tabular-nums">
               {options.fps} fps
             </span>
           </div>
@@ -77,7 +77,7 @@ export function VideoOptionsPanel({
                 fps: Number(e.target.value) as VideoConversionOptions["fps"],
               })
             }
-            className="w-full h-8 px-2.5 text-xs font-mono bg-[var(--card)] text-[var(--foreground)] rounded-md outline-none focus:ring-1 focus:ring-[var(--ring)] cursor-pointer"
+            className="w-full h-8 px-2.5 text-xs font-mono bg-(--card) text-(--foreground) rounded-md outline-none focus:ring-1 focus:ring-(--ring) cursor-pointer"
           >
             {isGif ? (
               <>
@@ -97,11 +97,11 @@ export function VideoOptionsPanel({
         </div>
       ) : (
         <div className="flex flex-col gap-1.5">
-          <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+          <div className="flex justify-between text-xs font-mono text-(--muted-foreground)">
             <span>Sample Rate</span>
-            <span className="font-semibold text-[var(--foreground)]">48 kHz</span>
+            <span className="font-semibold text-(--foreground)">48 kHz</span>
           </div>
-          <div className="flex items-center text-xs font-mono bg-[var(--card)] h-8 px-2.5 rounded-md text-[var(--foreground)]">
+          <div className="flex items-center text-xs font-mono bg-(--card) h-8 px-2.5 rounded-md text-(--foreground)">
             48 kHz Studio Broadcast
           </div>
         </div>
@@ -110,13 +110,13 @@ export function VideoOptionsPanel({
       {/* Slot 3: Speed Multiplier or Audio Channels */}
       {!isAudioOnly ? (
         <div className="flex flex-col gap-1.5">
-          <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+          <div className="flex justify-between text-xs font-mono text-(--muted-foreground)">
             <span>Playback Speed</span>
-            <span className="font-semibold text-[var(--foreground)] tabular-nums">
+            <span className="font-semibold text-(--foreground) tabular-nums">
               {options.speed}x
             </span>
           </div>
-          <div className="grid grid-cols-4 gap-1 bg-[var(--card)] p-0.5 rounded-md h-8 items-center text-center">
+          <div className="grid grid-cols-4 gap-1 bg-(--card) p-0.5 rounded-md h-8 items-center text-center">
             {([0.5, 1, 1.5, 2] as const).map((spd) => (
               <button
                 key={spd}
@@ -124,8 +124,8 @@ export function VideoOptionsPanel({
                 onClick={() => onOptionsChange({ ...options, speed: spd })}
                 className={`h-7 text-xs font-mono rounded transition-colors cursor-pointer ${
                   options.speed === spd
-                    ? "bg-[var(--foreground)] text-[var(--background)] font-medium"
-                    : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                    ? "bg-(--foreground) text-(--background) font-medium"
+                    : "text-(--muted-foreground) hover:text-(--foreground)"
                 }`}
               >
                 {spd}x
@@ -135,11 +135,11 @@ export function VideoOptionsPanel({
         </div>
       ) : (
         <div className="flex flex-col gap-1.5">
-          <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+          <div className="flex justify-between text-xs font-mono text-(--muted-foreground)">
             <span>Channel Layout</span>
-            <span className="font-semibold text-[var(--foreground)]">Stereo</span>
+            <span className="font-semibold text-(--foreground)">Stereo</span>
           </div>
-          <div className="flex items-center text-xs font-mono bg-[var(--card)] h-8 px-2.5 rounded-md text-[var(--foreground)]">
+          <div className="flex items-center text-xs font-mono bg-(--card) h-8 px-2.5 rounded-md text-(--foreground)">
             2-Channel Stereo Mix
           </div>
         </div>
@@ -151,8 +151,8 @@ export function VideoOptionsPanel({
           <label
             className={`flex items-center gap-2 text-xs font-mono h-8 px-2.5 rounded-md cursor-pointer select-none transition-colors ${
               !options.mute
-                ? "bg-[var(--primary)] text-[var(--primary-foreground)] font-medium"
-                : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+                ? "bg-(--primary) text-(--primary-foreground) font-medium"
+                : "bg-(--card) text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted)"
             }`}
           >
             <input
@@ -161,14 +161,14 @@ export function VideoOptionsPanel({
               onChange={(e) =>
                 onOptionsChange({ ...options, mute: !e.target.checked })
               }
-              className="rounded accent-[var(--foreground)] sr-only"
+              className="rounded accent-(--foreground) sr-only"
             />
             <span>Audio: {!options.mute ? "Included" : "Muted"}</span>
           </label>
         </div>
       ) : (
         <div className="flex flex-col justify-end">
-          <div className="flex items-center gap-2 text-xs font-mono h-8 px-2.5 rounded-md bg-[var(--card)] text-[var(--muted-foreground)]">
+          <div className="flex items-center gap-2 text-xs font-mono h-8 px-2.5 rounded-md bg-(--card) text-(--muted-foreground)">
             <span>100% Client-Side WASM</span>
           </div>
         </div>

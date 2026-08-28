@@ -324,7 +324,7 @@ export function DocumentConverter({
                   <button
                     type="button"
                     onClick={() => setIsPdfToImageMode(true)}
-                    className="px-2 py-1 text-xs font-mono font-medium rounded-md border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--muted)] text-[var(--foreground)] transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                    className="px-2 py-1 text-xs font-mono font-medium rounded-md border border-(--border) bg-(--card) hover:bg-(--muted) text-(--foreground) transition-colors inline-flex items-center gap-1.5 cursor-pointer"
                   >
                     <FileStack className="w-3.5 h-3.5 text-blue-500" />
                     <span className="hidden sm:inline">PDF to Images</span>

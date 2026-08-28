@@ -73,12 +73,12 @@ export function BatchToolbar({
       : null;
 
   return (
-    <div className="flex flex-col gap-2.5 py-3 border-b border-[var(--border)] bg-[var(--background)] w-full">
+    <div className="flex flex-col gap-2.5 py-3 border-b border-(--border) bg-(--background) w-full">
       {/* ── Top Bar: Statistics & Quick Mode Triggers ── */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-1.5 font-mono text-xs font-semibold text-[var(--foreground)]">
-            <Layers className="w-4 h-4 text-[var(--muted-foreground)]" />
+          <div className="flex items-center gap-1.5 font-mono text-xs font-semibold text-(--foreground)">
+            <Layers className="w-4 h-4 text-(--muted-foreground)" />
             <span>
               {doneCount}/{items.length} converted
             </span>
@@ -97,7 +97,7 @@ export function BatchToolbar({
             <button
               type="button"
               onClick={onOpenImageToPdf}
-              className="h-7.5 px-2 sm:px-2.5 text-[11px] sm:text-xs font-mono font-medium rounded-md border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--muted)] text-[var(--foreground)] transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="h-7.5 px-2 sm:px-2.5 text-[11px] sm:text-xs font-mono font-medium rounded-md border border-(--border) bg-(--card) hover:bg-(--muted) text-(--foreground) transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <Images className="w-3.5 h-3.5 text-emerald-500" />
               <span>Image to PDF</span>
@@ -108,7 +108,7 @@ export function BatchToolbar({
             <button
               type="button"
               onClick={() => onOpenPdfToImage(pdfItem.file)}
-              className="h-7.5 px-2 sm:px-2.5 text-[11px] sm:text-xs font-mono font-medium rounded-md border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--muted)] text-[var(--foreground)] transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="h-7.5 px-2 sm:px-2.5 text-[11px] sm:text-xs font-mono font-medium rounded-md border border-(--border) bg-(--card) hover:bg-(--muted) text-(--foreground) transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <FileStack className="w-3.5 h-3.5 text-blue-500" />
               <span>PDF to Images</span>
@@ -121,7 +121,7 @@ export function BatchToolbar({
       <div className="flex flex-wrap items-center justify-between gap-2">
         {/* Global Format Selector */}
         <div className="flex items-center gap-1.5">
-          <span className="text-xs font-mono text-[var(--muted-foreground)] shrink-0 hidden sm:inline">
+          <span className="text-xs font-mono text-(--muted-foreground) shrink-0 hidden sm:inline">
             Convert all to:
           </span>
           <select
@@ -132,7 +132,7 @@ export function BatchToolbar({
               }
             }}
             defaultValue=""
-            className="h-8 px-2 py-1 text-xs font-mono font-medium rounded-md bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)] focus:outline-none focus:ring-1 focus:ring-[var(--ring)] cursor-pointer"
+            className="h-8 px-2 py-1 text-xs font-mono font-medium rounded-md bg-(--card) border border-(--border) text-(--foreground) focus:outline-none focus:ring-1 focus:ring-(--ring) cursor-pointer"
           >
             <option value="" disabled>
               Set all formats...
@@ -177,7 +177,7 @@ export function BatchToolbar({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="h-8 px-2.5 text-xs font-mono font-medium rounded-md border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--muted)] text-[var(--foreground)] transition-colors flex items-center gap-1.5 cursor-pointer"
+            className="h-8 px-2.5 text-xs font-mono font-medium rounded-md border border-(--border) bg-(--background) hover:bg-(--muted) text-(--foreground) transition-colors flex items-center gap-1.5 cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Add</span>
@@ -211,7 +211,7 @@ export function BatchToolbar({
               type="button"
               disabled={isConvertingAll}
               onClick={onConvertAll}
-              className="h-8 px-3 sm:px-3.5 text-xs font-mono font-medium rounded-md bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 transition-opacity flex items-center gap-1.5 shadow-xs disabled:opacity-50 cursor-pointer"
+              className="h-8 px-3 sm:px-3.5 text-xs font-mono font-medium rounded-md bg-(--foreground) text-(--background) hover:opacity-90 transition-opacity flex items-center gap-1.5 shadow-xs disabled:opacity-50 cursor-pointer"
             >
               {isConvertingAll ? (
                 <>
@@ -233,7 +233,7 @@ export function BatchToolbar({
               type="button"
               onClick={onClearDone}
               title="Clear converted files"
-              className="h-8 px-2 rounded-md text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors text-xs font-mono cursor-pointer"
+              className="h-8 px-2 rounded-md text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted) transition-colors text-xs font-mono cursor-pointer"
             >
               Clear Done
             </button>
@@ -243,7 +243,7 @@ export function BatchToolbar({
             type="button"
             onClick={onClearAll}
             title="Clear entire batch"
-            className="h-8 w-8 inline-flex items-center justify-center rounded-md text-[var(--muted-foreground)] hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+            className="h-8 w-8 inline-flex items-center justify-center rounded-md text-(--muted-foreground) hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
           >
             <Trash2 className="w-4 h-4" />
           </button>

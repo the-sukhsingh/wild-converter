@@ -19,12 +19,12 @@ export function ThreeDOptionsPanel({
   const formatInfo = THREE_D_FORMATS[options.format] || THREE_D_FORMATS.glb;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 py-3 border-y border-[var(--border)] min-h-[82px] items-center">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 py-3 border-y border-(--border) min-h-20.5 items-center">
       {/* Unit Scaling */}
       <div className="flex flex-col gap-1.5">
-        <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+        <div className="flex justify-between text-xs font-mono text-(--muted-foreground)">
           <span>Unit Scale</span>
-          <span className="font-semibold text-[var(--foreground)]">
+          <span className="font-semibold text-(--foreground)">
             {options.scale === 1 ? "1:1" : `${options.scale}x`}
           </span>
         </div>
@@ -36,7 +36,7 @@ export function ThreeDOptionsPanel({
               scale: Number(e.target.value),
             })
           }
-          className="w-full h-8 px-2.5 text-xs font-mono bg-[var(--card)] text-[var(--foreground)] rounded-md outline-none focus:ring-1 focus:ring-[var(--ring)] cursor-pointer"
+          className="w-full h-8 px-2.5 text-xs font-mono bg-(--card) text-(--foreground) rounded-md outline-none focus:ring-1 focus:ring-(--ring) cursor-pointer"
         >
           <option value={1}>1:1 (No Rescaling)</option>
           <option value={0.001}>mm to meters (÷ 1000)</option>
@@ -47,20 +47,20 @@ export function ThreeDOptionsPanel({
 
       {/* Up Axis */}
       <div className="flex flex-col gap-1.5">
-        <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+        <div className="flex justify-between text-xs font-mono text-(--muted-foreground)">
           <span>Up Axis</span>
-          <span className="font-semibold text-[var(--foreground)]">
+          <span className="font-semibold text-(--foreground)">
             {options.upAxis}-UP
           </span>
         </div>
-        <div className="grid grid-cols-2 gap-1 bg-[var(--card)] p-0.5 rounded-md h-8 items-center text-center">
+        <div className="grid grid-cols-2 gap-1 bg-(--card) p-0.5 rounded-md h-8 items-center text-center">
           <button
             type="button"
             onClick={() => onOptionsChange({ ...options, upAxis: "Y" })}
             className={`h-7 text-xs font-mono rounded transition-colors cursor-pointer ${
               options.upAxis === "Y"
-                ? "bg-[var(--foreground)] text-[var(--background)] font-medium"
-                : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                ? "bg-(--foreground) text-(--background) font-medium"
+                : "text-(--muted-foreground) hover:text-(--foreground)"
             }`}
           >
             Y-Up (glTF/Web)
@@ -70,8 +70,8 @@ export function ThreeDOptionsPanel({
             onClick={() => onOptionsChange({ ...options, upAxis: "Z" })}
             className={`h-7 text-xs font-mono rounded transition-colors cursor-pointer ${
               options.upAxis === "Z"
-                ? "bg-[var(--foreground)] text-[var(--background)] font-medium"
-                : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                ? "bg-(--foreground) text-(--background) font-medium"
+                : "text-(--muted-foreground) hover:text-(--foreground)"
             }`}
           >
             Z-Up (CAD/STL)
@@ -81,20 +81,20 @@ export function ThreeDOptionsPanel({
 
       {/* Binary / ASCII Mode */}
       <div className="flex flex-col gap-1.5">
-        <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+        <div className="flex justify-between text-xs font-mono text-(--muted-foreground)">
           <span>Container Format</span>
-          <span className="font-semibold text-[var(--foreground)]">
+          <span className="font-semibold text-(--foreground)">
             {options.binary ? "Binary" : "ASCII Text"}
           </span>
         </div>
-        <div className="grid grid-cols-2 gap-1 bg-[var(--card)] p-0.5 rounded-md h-8 items-center text-center">
+        <div className="grid grid-cols-2 gap-1 bg-(--card) p-0.5 rounded-md h-8 items-center text-center">
           <button
             type="button"
             onClick={() => onOptionsChange({ ...options, binary: true })}
             className={`h-7 text-xs font-mono rounded transition-colors cursor-pointer ${
               options.binary
-                ? "bg-[var(--foreground)] text-[var(--background)] font-medium"
-                : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                ? "bg-(--foreground) text-(--background) font-medium"
+                : "text-(--muted-foreground) hover:text-(--foreground)"
             }`}
           >
             Binary (Small)
@@ -104,8 +104,8 @@ export function ThreeDOptionsPanel({
             onClick={() => onOptionsChange({ ...options, binary: false })}
             className={`h-7 text-xs font-mono rounded transition-colors cursor-pointer ${
               !options.binary
-                ? "bg-[var(--foreground)] text-[var(--background)] font-medium"
-                : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                ? "bg-(--foreground) text-(--background) font-medium"
+                : "text-(--muted-foreground) hover:text-(--foreground)"
             }`}
           >
             ASCII (Readable)
@@ -118,8 +118,8 @@ export function ThreeDOptionsPanel({
         <label
           className={`flex items-center gap-2 text-xs font-mono h-8 px-2.5 rounded-md cursor-pointer select-none transition-colors ${
             options.centerMesh
-              ? "bg-[var(--primary)] text-[var(--primary-foreground)] font-medium"
-              : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+              ? "bg-(--primary) text-(--primary-foreground) font-medium"
+              : "bg-(--card) text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted)"
           }`}
         >
           <input
@@ -128,7 +128,7 @@ export function ThreeDOptionsPanel({
             onChange={(e) =>
               onOptionsChange({ ...options, centerMesh: e.target.checked })
             }
-            className="rounded accent-[var(--foreground)] sr-only"
+            className="rounded accent-(--foreground) sr-only"
           />
           <span>Center Mesh at Origin (0,0,0)</span>
         </label>

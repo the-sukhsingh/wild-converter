@@ -374,13 +374,13 @@ export function BatchTable({
         {items.length >= 4 && (
           <div className="shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="relative w-full sm:max-w-xs">
-              <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)]" />
+              <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-(--muted-foreground)" />
               <input
                 type="text"
                 placeholder="Filter files..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-8 pl-8 pr-3 text-xs font-mono rounded-md bg-[var(--card)]/60 border border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-1 focus:ring-[var(--ring)]"
+                className="w-full h-8 pl-8 pr-3 text-xs font-mono rounded-md bg-(--card)/60 border border-(--border) text-(--foreground) placeholder:text-(--muted-foreground) focus:outline-none focus:ring-1 focus:ring-(--ring)"
               />
             </div>
 
@@ -393,8 +393,8 @@ export function BatchTable({
                     onClick={() => setCategoryFilter(cat)}
                     className={`px-2 py-1 rounded text-xs font-mono capitalize transition-colors shrink-0 cursor-pointer ${
                       categoryFilter === cat
-                        ? "bg-[var(--foreground)] text-[var(--background)] font-medium"
-                        : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]/40"
+                        ? "bg-(--foreground) text-(--background) font-medium"
+                        : "text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted)/40"
                     }`}
                   >
                     {cat}
@@ -427,8 +427,8 @@ export function BatchTable({
           ))}
 
           {filteredItems.length === 0 && (
-            <div className="p-8 text-center border border-dashed border-[var(--border)] rounded-xl">
-              <p className="font-mono text-xs text-[var(--muted-foreground)]">
+            <div className="p-8 text-center border border-dashed border-(--border) rounded-xl">
+              <p className="font-mono text-xs text-(--muted-foreground)">
                 No matching files found.
               </p>
             </div>
@@ -438,8 +438,8 @@ export function BatchTable({
         {/* Feature 5: Keyboard shortcut hints */}
         {items.length > 0 && (
           <div className="shrink-0 hidden sm:flex items-center gap-3 pt-1">
-            <Keyboard className="w-3 h-3 text-[var(--border)] shrink-0" />
-            <span className="font-mono text-[10px] text-[var(--border)] select-none">
+            <Keyboard className="w-3 h-3 text-(--border) shrink-0" />
+            <span className="font-mono text-[10px] text-(--border) select-none">
               Ctrl+Enter convert all · Ctrl+D download zip · Esc close
             </span>
           </div>

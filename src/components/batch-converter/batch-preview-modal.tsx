@@ -36,7 +36,7 @@ function getCategoryIcon(cat: string) {
     case "3d":        return <Box       className={`${cls} text-orange-500`} />;
     case "fonts":     return <Type      className={`${cls} text-pink-500`} />;
     case "archive":   return <Archive   className={`${cls} text-indigo-500`} />;
-    default:          return <FileText  className={`${cls} text-[var(--muted-foreground)]`} />;
+    default:          return <FileText  className={`${cls} text-(--muted-foreground)`} />;
   }
 }
 
@@ -97,21 +97,21 @@ export function BatchPreviewModal({
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
 
       {/* Modal */}
-      <div className="relative z-10 w-full max-w-2xl bg-[var(--background)] border border-[var(--border)] rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="relative z-10 w-full max-w-2xl bg-(--background) border border-(--border) rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)] shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-(--border) shrink-0">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="font-mono text-sm font-semibold text-[var(--foreground)] truncate" title={item.name}>
+            <span className="font-mono text-sm font-semibold text-(--foreground) truncate" title={item.name}>
               {item.name}
             </span>
-            <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-mono uppercase bg-[var(--muted)] text-[var(--muted-foreground)]">
+            <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-mono uppercase bg-(--muted) text-(--muted-foreground)">
               {item.detectedInputFormat ?? item.category}
             </span>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 ml-3 p-1.5 rounded-md text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors"
+            className="shrink-0 ml-3 p-1.5 rounded-md text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted) transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -121,7 +121,7 @@ export function BatchPreviewModal({
         <div className="flex-1 min-h-0 overflow-auto">
           {showImage ? (
             /* Image preview */
-            <div className="flex items-center justify-center p-4 bg-[var(--muted)]/20 min-h-[200px]">
+            <div className="flex items-center justify-center p-4 bg-(--muted)/20 min-h-50">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={previewUrl!}
@@ -132,9 +132,9 @@ export function BatchPreviewModal({
             </div>
           ) : (
             /* Non-image placeholder */
-            <div className="flex flex-col items-center justify-center py-12 gap-4 bg-[var(--muted)]/10 min-h-[200px]">
+            <div className="flex flex-col items-center justify-center py-12 gap-4 bg-(--muted)/10 min-h-50">
               {getCategoryIcon(item.category)}
-              <p className="font-mono text-sm text-[var(--muted-foreground)]">
+              <p className="font-mono text-sm text-(--muted-foreground)">
                 No preview available
               </p>
             </div>
@@ -142,7 +142,7 @@ export function BatchPreviewModal({
         </div>
 
         {/* Metadata Footer */}
-        <div className="px-5 py-4 border-t border-[var(--border)] bg-[var(--card)]/40 shrink-0">
+        <div className="px-5 py-4 border-t border-(--border) bg-(--card)/40 shrink-0">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
             <MetaField label="Size" value={formatFileSize(item.size)} />
             <MetaField label="Type" value={(item.detectedInputFormat ?? item.category).toUpperCase()} />
@@ -161,7 +161,7 @@ export function BatchPreviewModal({
               <button
                 type="button"
                 onClick={() => { onConvert(item); onClose(); }}
-                className="px-3 py-1.5 text-xs font-mono font-medium rounded-md bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 transition-opacity flex items-center gap-1.5"
+                className="px-3 py-1.5 text-xs font-mono font-medium rounded-md bg-(--foreground) text-(--background) hover:opacity-90 transition-opacity flex items-center gap-1.5"
               >
                 <Play className="w-3 h-3 fill-current" />
                 Convert
@@ -180,7 +180,7 @@ export function BatchPreviewModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-3 py-1.5 text-xs font-mono rounded-md border border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors"
+              className="px-3 py-1.5 text-xs font-mono rounded-md border border-(--border) text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted) transition-colors"
             >
               Close
             </button>
@@ -194,8 +194,8 @@ export function BatchPreviewModal({
 function MetaField({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="font-mono text-[10px] text-[var(--muted-foreground)] uppercase tracking-wider">{label}</span>
-      <span className="font-mono text-xs text-[var(--foreground)] font-medium truncate">{value}</span>
+      <span className="font-mono text-[10px] text-(--muted-foreground) uppercase tracking-wider">{label}</span>
+      <span className="font-mono text-xs text-(--foreground) font-medium truncate">{value}</span>
     </div>
   );
 }

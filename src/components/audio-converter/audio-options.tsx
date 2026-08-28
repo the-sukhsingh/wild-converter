@@ -20,12 +20,12 @@ export function AudioOptionsPanel({
   const isLossless = formatInfo.isLossless || targetFormat.endsWith("-ls");
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 py-3 border-y border-[var(--border)] min-h-[82px] items-center">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 py-3 border-y border-(--border) min-h-20.5 items-center">
       {/* Sample Rate */}
       <div className="flex flex-col gap-1.5">
-        <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+        <div className="flex justify-between text-xs font-mono text-(--muted-foreground)">
           <span>Sample Rate</span>
-          <span className="font-semibold text-[var(--foreground)] tabular-nums">
+          <span className="font-semibold text-(--foreground) tabular-nums">
             {options.sampleRate / 1000} kHz
           </span>
         </div>
@@ -34,7 +34,7 @@ export function AudioOptionsPanel({
           onChange={(e) =>
             onOptionsChange({ ...options, sampleRate: Number(e.target.value) })
           }
-          className="w-full h-8 px-2.5 text-xs font-mono bg-[var(--card)] text-[var(--foreground)] rounded-md outline-none focus:ring-1 focus:ring-[var(--ring)] cursor-pointer"
+          className="w-full h-8 px-2.5 text-xs font-mono bg-(--card) text-(--foreground) rounded-md outline-none focus:ring-1 focus:ring-(--ring) cursor-pointer"
         >
           <option value={96000}>96 kHz (Studio Master)</option>
           <option value={48000}>48 kHz (Broadcast / Video)</option>
@@ -49,9 +49,9 @@ export function AudioOptionsPanel({
       {/* Bitrate (for lossy) or Bit Depth (for PCM) */}
       {!isLossless ? (
         <div className="flex flex-col gap-1.5">
-          <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+          <div className="flex justify-between text-xs font-mono text-(--muted-foreground)">
             <span>Bitrate</span>
-            <span className="font-semibold text-[var(--foreground)] tabular-nums">
+            <span className="font-semibold text-(--foreground) tabular-nums">
               {options.bitrate} kbps
             </span>
           </div>
@@ -60,7 +60,7 @@ export function AudioOptionsPanel({
             onChange={(e) =>
               onOptionsChange({ ...options, bitrate: Number(e.target.value) })
             }
-            className="w-full h-8 px-2.5 text-xs font-mono bg-[var(--card)] text-[var(--foreground)] rounded-md outline-none focus:ring-1 focus:ring-[var(--ring)] cursor-pointer"
+            className="w-full h-8 px-2.5 text-xs font-mono bg-(--card) text-(--foreground) rounded-md outline-none focus:ring-1 focus:ring-(--ring) cursor-pointer"
           >
             <option value={320}>320 kbps (Maximum Quality)</option>
             <option value={256}>256 kbps (High Quality)</option>
@@ -72,9 +72,9 @@ export function AudioOptionsPanel({
         </div>
       ) : (
         <div className="flex flex-col gap-1.5">
-          <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+          <div className="flex justify-between text-xs font-mono text-(--muted-foreground)">
             <span>Bit Depth</span>
-            <span className="font-semibold text-[var(--foreground)] tabular-nums">
+            <span className="font-semibold text-(--foreground) tabular-nums">
               {options.bitDepth}-bit
             </span>
           </div>
@@ -86,7 +86,7 @@ export function AudioOptionsPanel({
                 bitDepth: Number(e.target.value) as 16 | 24 | 32,
               })
             }
-            className="w-full h-8 px-2.5 text-xs font-mono bg-[var(--card)] text-[var(--foreground)] rounded-md outline-none focus:ring-1 focus:ring-[var(--ring)] cursor-pointer"
+            className="w-full h-8 px-2.5 text-xs font-mono bg-(--card) text-(--foreground) rounded-md outline-none focus:ring-1 focus:ring-(--ring) cursor-pointer"
           >
             <option value={16}>16-bit PCM (CD Audio)</option>
             <option value={24}>24-bit PCM (Studio Master)</option>
@@ -97,20 +97,20 @@ export function AudioOptionsPanel({
 
       {/* Channels */}
       <div className="flex flex-col gap-1.5">
-        <div className="flex justify-between text-xs font-mono text-[var(--muted-foreground)]">
+        <div className="flex justify-between text-xs font-mono text-(--muted-foreground)">
           <span>Channels</span>
-          <span className="font-semibold text-[var(--foreground)]">
+          <span className="font-semibold text-(--foreground)">
             {options.channels === 1 ? "Mono" : "Stereo"}
           </span>
         </div>
-        <div className="grid grid-cols-2 gap-1 bg-[var(--card)] p-0.5 rounded-md h-8 items-center">
+        <div className="grid grid-cols-2 gap-1 bg-(--card) p-0.5 rounded-md h-8 items-center">
           <button
             type="button"
             onClick={() => onOptionsChange({ ...options, channels: 2 })}
             className={`h-7 text-xs font-mono rounded transition-colors cursor-pointer ${
               options.channels === 2
-                ? "bg-[var(--foreground)] text-[var(--background)] font-medium"
-                : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                ? "bg-(--foreground) text-(--background) font-medium"
+                : "text-(--muted-foreground) hover:text-(--foreground)"
             }`}
           >
             Stereo
@@ -120,8 +120,8 @@ export function AudioOptionsPanel({
             onClick={() => onOptionsChange({ ...options, channels: 1 })}
             className={`h-7 text-xs font-mono rounded transition-colors cursor-pointer ${
               options.channels === 1
-                ? "bg-[var(--foreground)] text-[var(--background)] font-medium"
-                : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                ? "bg-(--foreground) text-(--background) font-medium"
+                : "text-(--muted-foreground) hover:text-(--foreground)"
             }`}
           >
             Mono
@@ -134,8 +134,8 @@ export function AudioOptionsPanel({
         <label
           className={`flex items-center gap-2 text-xs font-mono h-8 px-2.5 rounded-md cursor-pointer select-none transition-colors ${
             options.normalize
-              ? "bg-[var(--primary)] text-[var(--primary-foreground)] font-medium"
-              : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+              ? "bg-(--primary) text-(--primary-foreground) font-medium"
+              : "bg-(--card) text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted)"
           }`}
         >
           <input
@@ -144,7 +144,7 @@ export function AudioOptionsPanel({
             onChange={(e) =>
               onOptionsChange({ ...options, normalize: e.target.checked })
             }
-            className="rounded accent-[var(--foreground)] sr-only"
+            className="rounded accent-(--foreground) sr-only"
           />
           <span>Peak Normalization (0 dB)</span>
         </label>

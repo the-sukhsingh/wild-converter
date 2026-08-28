@@ -36,10 +36,10 @@ export function VideoDropzone({ onFileSelect }: VideoDropzoneProps) {
   return (
     <div className="w-full flex flex-col justify-center items-start gap-4 sm:gap-6 md:gap-8">
       <div>
-        <h1 className="text-2xl sm:text-3xl md:text-5xl font-semibold tracking-tight text-[var(--foreground)]">
+        <h1 className="text-2xl sm:text-3xl md:text-5xl font-semibold tracking-tight text-(--foreground)">
           Convert video
         </h1>
-        <p className="text-xs sm:text-sm md:text-base text-[var(--muted-foreground)] mt-1.5 sm:mt-2 max-w-lg leading-relaxed">
+        <p className="text-xs sm:text-sm md:text-base text-(--muted-foreground) mt-1.5 sm:mt-2 max-w-lg leading-relaxed">
           Client-side converter. No file uploads, no tracking, 100% private.
         </p>
       </div>
@@ -60,19 +60,19 @@ export function VideoDropzone({ onFileSelect }: VideoDropzoneProps) {
             fileInputRef.current?.click();
           }
         }}
-        className={`w-full max-w-xl p-4 sm:p-8 rounded-xl bg-[var(--card)] hover:bg-[var(--muted)]/70 transition-all cursor-pointer flex flex-col gap-3 group focus-visible:outline-2 focus-visible:outline-[var(--ring)] focus-visible:outline-offset-2 ${
-          isDragging ? "bg-[var(--muted)] ring-2 ring-[var(--accent)]" : ""
+        className={`w-full max-w-xl p-4 sm:p-8 rounded-xl bg-(--card) hover:bg-(--muted)/70 transition-all cursor-pointer flex flex-col gap-3 group focus-visible:outline-2 focus-visible:outline-(--ring) focus-visible:outline-offset-2 ${
+          isDragging ? "bg-(--muted) ring-2 ring-(--accent)" : ""
         }`}
       >
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-[var(--background)] text-[var(--muted-foreground)] group-hover:text-[var(--foreground)] transition-colors shrink-0">
+          <div className="p-2 rounded-lg bg-(--background) text-(--muted-foreground) group-hover:text-(--foreground) transition-colors shrink-0">
             <UploadCloud className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-sm md:text-base font-medium text-[var(--foreground)]">
+            <div className="text-sm md:text-base font-medium text-(--foreground)">
               Drop a video file here, or choose file
             </div>
-            <div className="text-xs font-mono text-[var(--muted-foreground)] mt-0.5">
+            <div className="text-xs font-mono text-(--muted-foreground) mt-0.5">
               MP4 · WebM · MKV · MOV · AVI · Animated GIF · FLV · WMV · 3GP · Audio Extract
             </div>
           </div>
