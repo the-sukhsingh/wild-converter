@@ -26,6 +26,11 @@ const nextConfig: NextConfig = {
         zlib: false,
       };
 
+      config.module = {
+        ...config.module,
+        exprContextCritical: false,
+      };
+
       if (webpack) {
         config.plugins.push(
           new webpack.NormalModuleReplacementPlugin(/^node:/, (resource: { request: string }) => {
@@ -34,6 +39,15 @@ const nextConfig: NextConfig = {
         );
       }
     }
+
+    config.ignoreWarnings = [
+      ...(config.ignoreWarnings || []),
+      { module: /fonteditor-core/ },
+      { module: /@jsquash/ },
+      { message: /Critical dependency: the request of a dependency is an expression/ },
+      { message: /Circular dependency between chunks with runtime/ },
+    ];
+
     return config;
   },
 };
