@@ -1,5 +1,6 @@
 import JSZip from "jszip";
 import type { DocumentIR, DocumentSection, DocumentSlideSection, DocumentSheet } from "../types";
+import { parseBinaryPptRecords } from "./ppt-binary-parser";
 
 export async function parsePresentationDocument(
   file: File,
@@ -87,14 +88,24 @@ export async function parsePresentationDocument(
       }
     }
   } catch {
-    // Fallback: binary scan for printable unicode strings
-    const bytes = new Uint8Array(arrayBuffer);
-    const decoder = new TextDecoder("utf-8", { fatal: false });
-    const str = decoder.decode(bytes);
-    const words = str.match(/[A-Za-z0-9 ,.\-—:;?!'"()]{4,}/g) || [];
-    rawText = words.slice(0, 100).join(" ");
-    sections.push({ type: "paragraph", text: rawText });
-    slideCount = 1;
+    // If ZIP parsing fails or format is legacy binary .ppt, use the specialized binary PPT parser
+    const { slides: binarySlides, allText: binaryText } = parseBinaryPptRecords(arrayBuffer);
+    if (binarySlides.length > 0) {
+      sections.push(...binarySlides);
+      rawText = binaryText;
+      slideCount = binarySlides.length;
+      binarySlides.forEach((s, idx) => {
+        html += `<div class="slide-card"><h4>Slide ${idx + 1}: ${escapeHtml(s.title)}</h4><ul>`;
+        s.points.forEach((p) => {
+          html += `<li>${escapeHtml(p)}</li>`;
+        });
+        html += `</ul></div>`;
+      });
+    } else {
+      sections.push({ type: "paragraph", text: title });
+      rawText = title;
+      slideCount = 1;
+    }
   }
 
   const words = rawText.trim().split(/\s+/).filter(Boolean);
@@ -107,6 +118,9 @@ export async function parsePresentationDocument(
     sheets,
     rawText,
     html,
+    rawBuffer: arrayBuffer,
+    originalFile: file,
+    sourceFormat: format,
     metadata: {
       title,
       wordCount,

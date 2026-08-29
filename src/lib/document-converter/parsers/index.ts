@@ -31,11 +31,11 @@ export async function parseDocument(
       return parseSpreadsheetDocument(file);
 
     case "pptx":
+    case "ppt":
     case "odp":
       return parsePresentationDocument(file, ext);
 
     case "doc":
-    case "ppt":
     case "wp":
     case "wps":
       return parseLegacyDocument(file, ext);

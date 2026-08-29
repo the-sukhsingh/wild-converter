@@ -82,3 +82,19 @@ declare module "js-toml" {
   export function load(text: string): any;
   export function dump(obj: any): string;
 }
+
+declare module "pptx-preview" {
+  export function init(
+    container: HTMLElement,
+    options?: {
+      mode?: "slide" | "list";
+      width?: number;
+      height?: number;
+    }
+  ): {
+    preview(data: ArrayBuffer | Uint8Array): Promise<void>;
+    renderSingleSlide(index: number): void;
+    slideCount: number;
+    destroy(): void;
+  };
+}

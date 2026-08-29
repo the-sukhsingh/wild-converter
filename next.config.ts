@@ -10,7 +10,25 @@ const nextConfig: NextConfig = {
     "heic2any",
     "docx-to-pdf-wasm",
     "pptxgenjs",
+    "pptx-preview",
   ],
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          {
+            key: "Cross-Origin-Opener-Policy",
+            value: "same-origin",
+          },
+          {
+            key: "Cross-Origin-Embedder-Policy",
+            value: "credentialless",
+          },
+        ],
+      },
+    ];
+  },
   turbopack: {},
   webpack: (config, { isServer, webpack }) => {
     if (!isServer) {

@@ -18,6 +18,7 @@ import { generateText } from "./generators/text-generator";
 
 export * from "./types";
 export { parseDocument, parseDocument as probeDocument } from "./parsers";
+export { renderPresentationToPdf } from "./generators/presentation-to-pdf";
 
 /**
  * Universal client-side document conversion pipeline
@@ -43,7 +44,7 @@ export async function convertDocument(
 
   switch (targetFormat) {
     case "pdf":
-      blob = await generatePdf(docIR, options);
+      blob = await generatePdf(docIR, options, onProgress);
       break;
 
     case "docx":

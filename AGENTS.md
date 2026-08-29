@@ -23,6 +23,10 @@ Flow -
 
 No sign up required, no ads, no tracking, no bloat. 
 
+--STRICTLY FOLLOW THESE INSTRUCTIONS -- 
+1. All the conversions will be done client side using WASM or npm packages. No server side conversion.
+2. No analytics, no tracking, no bloat. 
+
 We will use shadcn ui components for the base ui. 
 But we can override them as needed. 
 We can also add our own components if needed. 

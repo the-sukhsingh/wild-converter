@@ -59,6 +59,9 @@ export async function parseLegacyDocument(
     sheets,
     rawText,
     html,
+    rawBuffer: arrayBuffer,
+    originalFile: file,
+    sourceFormat: format,
     metadata: {
       title,
       wordCount,

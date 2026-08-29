@@ -1,17 +1,7 @@
 import { jsPDF } from "jspdf";
 import type { DocumentIR, DocumentConversionOptions } from "../types";
-
-function sanitizeClonedDoc(clonedDoc: Document) {
-  const styleTags = clonedDoc.querySelectorAll("style, link[rel='stylesheet']");
-  styleTags.forEach((tag) => {
-    if (tag.textContent && (tag.textContent.includes("lab(") || tag.textContent.includes("oklch(") || tag.textContent.includes("oklab("))) {
-      tag.textContent = tag.textContent
-        .replace(/lab\([^)]+\)/gi, "rgb(15, 23, 42)")
-        .replace(/oklch\([^)]+\)/gi, "rgb(15, 23, 42)")
-        .replace(/oklab\([^)]+\)/gi, "rgb(15, 23, 42)");
-    }
-  });
-}
+import { renderPresentationToPdf } from "./presentation-to-pdf";
+import { sanitizeClonedDoc } from "../sanitize-cloned-doc";
 
 let cachedDocxWasmModule: WebAssembly.Module | null = null;
 
@@ -636,9 +626,19 @@ function generatePdfFromIR(
 
 export async function generatePdf(
   doc: DocumentIR,
-  options: DocumentConversionOptions = {}
+  options: DocumentConversionOptions = {},
+  onProgress?: (progress: number, text: string) => void
 ): Promise<Blob> {
-  // 1. If DOCX document with rawBuffer, convert using docx-to-pdf-wasm WASM engine!
+  // 1. If PPT / PPTX / ODP presentation with DOM available, render slides with image extraction and capture screenshots to PDF
+  if (
+    (doc.sourceFormat === "ppt" || doc.sourceFormat === "pptx" || doc.sourceFormat === "odp") &&
+    typeof document !== "undefined"
+  ) {
+    const presPdfBlob = await renderPresentationToPdf(doc, options, onProgress);
+    if (presPdfBlob && presPdfBlob.size > 0) return presPdfBlob;
+  }
+
+  // 2. If DOCX document with rawBuffer, convert using docx-to-pdf-wasm WASM engine!
   if (doc.sourceFormat === "docx" && doc.rawBuffer) {
     const wasmPdfBlob = await convertDocxToPdfWasm(doc.rawBuffer);
     if (wasmPdfBlob) return wasmPdfBlob;
