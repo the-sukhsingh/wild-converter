@@ -2,6 +2,7 @@ import { jsPDF } from "jspdf";
 import JSZip from "jszip";
 import type { DocumentIR, DocumentConversionOptions } from "../types";
 import { parseBinaryPptRecords } from "../parsers/ppt-binary-parser";
+import { sanitizeClonedDoc } from "../sanitize-cloned-doc";
 
 function escapeHtml(str: string): string {
   return str
@@ -242,28 +243,168 @@ async function extractPresentationSlides(doc: DocumentIR): Promise<SlideData[]> 
 }
 
 /**
- * Universal Presentation to PDF conversion using an isolated iframe sandbox
- * and high-resolution screenshot rasterization.
+ * High-fidelity PPTX rendering via pptx-preview DOM parser + html2canvas screenshot stitching
  */
-export async function renderPresentationToPdf(
-  doc: DocumentIR,
-  options: DocumentConversionOptions = {},
+async function renderPptxViaPreviewAndCanvas(
+  rawBuffer: ArrayBuffer,
+  options: DocumentConversionOptions,
   onProgress?: (progress: number, text: string) => void
 ): Promise<Blob | null> {
   if (typeof document === "undefined" || typeof window === "undefined") {
     return null;
   }
 
-  let iframe: HTMLIFrameElement | null = null;
+  let wrapper: HTMLElement | null = null;
+  let previewer: any = null;
+
+  try {
+    const { init } = await import("pptx-preview");
+    const { default: html2canvas } = await import("html2canvas");
+
+    onProgress?.(15, "Initializing presentation layout engine...");
+
+    // Create an isolated container in DOM for high-resolution rendering
+    wrapper = document.createElement("div");
+    wrapper.id = "pptx-preview-render-host";
+    wrapper.style.position = "fixed";
+    wrapper.style.left = "-99999px";
+    wrapper.style.top = "0px";
+    wrapper.style.width = "1280px";
+    wrapper.style.background = "#ffffff";
+    wrapper.style.zIndex = "-9999";
+    wrapper.style.pointerEvents = "none";
+    wrapper.style.opacity = "1";
+    wrapper.style.overflow = "visible";
+
+    // Style overrides to keep slides isolated and clean
+    const styleOverride = document.createElement("style");
+    styleOverride.textContent = `
+      #pptx-preview-render-host .pptx-preview-wrapper { background: #ffffff !important; margin: 0 !important; padding: 0 !important; }
+      #pptx-preview-render-host .pptx-preview-slide-wrapper { box-shadow: none !important; margin: 0 0 40px 0 !important; background: #ffffff !important; }
+    `;
+    wrapper.appendChild(styleOverride);
+
+    document.body.appendChild(wrapper);
+
+    previewer = init(wrapper, {
+      width: 1280,
+      mode: "list",
+    });
+
+    onProgress?.(25, "Parsing presentation slides and visual elements...");
+    await previewer.preview(rawBuffer);
+
+    // Wait a brief tick for images, SVGs, and ECharts to settle
+    await new Promise((resolve) => setTimeout(resolve, 150));
+
+    // Wait for any <img> elements in the container to complete loading
+    const imgElements = Array.from(wrapper.querySelectorAll<HTMLImageElement>("img"));
+    if (imgElements.length > 0) {
+      await Promise.all(
+        imgElements.map((img) => {
+          if (img.complete) return Promise.resolve();
+          return new Promise<void>((res) => {
+            img.onload = () => res();
+            img.onerror = () => res();
+            setTimeout(res, 500);
+          });
+        })
+      );
+    }
+
+    const slideElements = wrapper.querySelectorAll<HTMLElement>(".pptx-preview-slide-wrapper");
+    if (!slideElements || slideElements.length === 0) {
+      return null;
+    }
+
+    const totalSlides = slideElements.length;
+    onProgress?.(35, `Stitching ${totalSlides} presentation slides into PDF...`);
+
+    let pdf: jsPDF | null = null;
+
+    for (let i = 0; i < totalSlides; i++) {
+      const slideEl = slideElements[i];
+      const slideW = slideEl.offsetWidth || 1280;
+      const slideH = slideEl.offsetHeight || 720;
+      const aspectRatio = slideW / (slideH || 1);
+      const isLandscape = aspectRatio >= 1;
+
+      const pageW = 792;
+      const pageH = Math.round(792 / aspectRatio);
+
+      const pct = Math.round(35 + ((i + 1) / totalSlides) * 60);
+      onProgress?.(pct, `Capturing and stitching slide ${i + 1} of ${totalSlides}...`);
+
+      const canvas = await html2canvas(slideEl, {
+        scale: 2.0,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+        onclone: (clonedDoc) => {
+          sanitizeClonedDoc(clonedDoc);
+          const styles = wrapper?.querySelectorAll("style");
+          styles?.forEach((st) => clonedDoc.head.appendChild(st.cloneNode(true)));
+        },
+      });
+
+      const imgData = canvas.toDataURL("image/jpeg", 0.98);
+
+      if (!pdf) {
+        pdf = new jsPDF({
+          orientation: isLandscape ? "landscape" : "portrait",
+          unit: "pt",
+          format: [pageW, pageH],
+        });
+      } else {
+        pdf.addPage([pageW, pageH], isLandscape ? "landscape" : "portrait");
+      }
+
+      pdf.addImage(imgData, "JPEG", 0, 0, pageW, pageH, undefined, "FAST");
+    }
+
+    if (pdf) {
+      onProgress?.(98, "Finalizing presentation PDF payload...");
+      return pdf.output("blob");
+    }
+  } catch (err) {
+    console.warn("pptx-preview rendering error, falling back to sandbox presentation renderer:", err);
+  } finally {
+    try {
+      if (previewer && typeof previewer.destroy === "function") {
+        previewer.destroy();
+      }
+    } catch {}
+    if (wrapper && document.body.contains(wrapper)) {
+      document.body.removeChild(wrapper);
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Universal Presentation to PDF conversion using an isolated sandbox container
+ * with high-definition screenshot rasterization for PPT, ODP, and fallback PPTX.
+ */
+async function renderPresentationSlidesViaSandboxHtml(
+  doc: DocumentIR,
+  options: DocumentConversionOptions,
+  onProgress?: (progress: number, text: string) => void
+): Promise<Blob | null> {
+  if (typeof document === "undefined" || typeof window === "undefined") {
+    return null;
+  }
+
+  let wrapper: HTMLElement | null = null;
 
   try {
     const { default: html2canvas } = await import("html2canvas");
-    onProgress?.(15, "Analyzing presentation slides and media...");
+    onProgress?.(20, "Extracting presentation structure and images...");
 
     const slides = await extractPresentationSlides(doc);
     if (slides.length === 0) return null;
 
-    onProgress?.(25, `Rendering ${slides.length} presentation slides in sandbox iframe...`);
+    onProgress?.(30, `Rendering ${slides.length} slides in sandbox container...`);
 
     const renderWidthPx = 1280;
     const renderHeightPx = 720;
@@ -276,80 +417,20 @@ export async function renderPresentationToPdf(
       format: [pdfWidthPt, pdfHeightPt],
     });
 
-    // Create completely isolated offscreen iframe to avoid CSS / Tailwind color conflicts
-    iframe = document.createElement("iframe");
-    iframe.id = "presentation-render-iframe";
-    iframe.style.position = "fixed";
-    iframe.style.left = "-9999px";
-    iframe.style.top = "-9999px";
-    iframe.style.width = `${renderWidthPx}px`;
-    iframe.style.height = `${renderHeightPx}px`;
-    iframe.style.border = "none";
-    iframe.style.visibility = "hidden";
+    wrapper = document.createElement("div");
+    wrapper.id = "presentation-sandbox-render-host";
+    wrapper.style.position = "fixed";
+    wrapper.style.left = "-99999px";
+    wrapper.style.top = "0px";
+    wrapper.style.width = `${renderWidthPx}px`;
+    wrapper.style.height = `${renderHeightPx}px`;
+    wrapper.style.background = "#ffffff";
+    wrapper.style.zIndex = "-9999";
+    wrapper.style.pointerEvents = "none";
+    wrapper.style.opacity = "1";
+    wrapper.style.overflow = "hidden";
 
-    document.body.appendChild(iframe);
-
-    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-    if (!iframeDoc) {
-      throw new Error("Unable to create iframe document context");
-    }
-
-    // Set isolated styles in iframe
-    iframeDoc.open();
-    iframeDoc.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <style>
-            * {
-              margin: 0;
-              padding: 0;
-              box-sizing: border-box;
-            }
-            body {
-              width: ${renderWidthPx}px;
-              height: ${renderHeightPx}px;
-              overflow: hidden;
-              background-color: #ffffff;
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            }
-            .slide-root {
-              width: ${renderWidthPx}px;
-              height: ${renderHeightPx}px;
-              display: flex;
-              flex-direction: column;
-              box-sizing: border-box;
-              padding: 56px 64px 44px 64px;
-              position: relative;
-            }
-            .accent-bar {
-              position: absolute;
-              top: 0;
-              left: 0;
-              right: 0;
-              height: 6px;
-              background: linear-gradient(90deg, #3b82f6, #6366f1, #ec4899);
-            }
-            .slide-badge {
-              font-size: 13px;
-              font-weight: 700;
-              padding: 4px 12px;
-              border-radius: 20px;
-              text-transform: uppercase;
-              letter-spacing: 0.5px;
-            }
-          </style>
-        </head>
-        <body>
-          <div id="slide-container"></div>
-        </body>
-      </html>
-    `);
-    iframeDoc.close();
-
-    const slideContainer = iframeDoc.getElementById("slide-container");
-    if (!slideContainer) return null;
+    document.body.appendChild(wrapper);
 
     for (let i = 0; i < slides.length; i++) {
       const slide = slides[i];
@@ -357,19 +438,36 @@ export async function renderPresentationToPdf(
       const hasImages = slide.images.length > 0;
       const mainImage = hasImages ? slide.images[0] : null;
 
-      const pct = Math.round(30 + ((i + 1) / slides.length) * 60);
+      const pct = Math.round(30 + ((i + 1) / slides.length) * 65);
       onProgress?.(pct, `Capturing slide ${i + 1} of ${slides.length} (${slide.title.slice(0, 25)})...`);
 
-      slideContainer.innerHTML = `
+      wrapper.innerHTML = `
         <div class="slide-root" style="
+          width: ${renderWidthPx}px;
+          height: ${renderHeightPx}px;
+          display: flex;
+          flex-direction: column;
+          box-sizing: border-box;
+          padding: 56px 64px 44px 64px;
+          position: relative;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
           background: ${
             isTitleSlide
               ? "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #090d16 100%)"
               : "#ffffff"
           };
           color: ${isTitleSlide ? "#f8fafc" : "#0f172a"};
+          overflow: hidden;
         ">
-          <div class="accent-bar"></div>
+          <!-- Accent Header Line -->
+          <div style="
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, #3b82f6, #6366f1, #ec4899);
+          "></div>
 
           <!-- Slide Header -->
           <div style="
@@ -379,7 +477,13 @@ export async function renderPresentationToPdf(
             margin-bottom: ${isTitleSlide ? "24px" : "32px"};
           ">
             <div style="display: flex; align-items: center; gap: 14px;">
-              <span class="slide-badge" style="
+              <span style="
+                font-size: 13px;
+                font-weight: 700;
+                padding: 4px 12px;
+                border-radius: 20px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
                 background: ${isTitleSlide ? "#3b82f6" : "#f1f5f9"};
                 color: ${isTitleSlide ? "#ffffff" : "#475569"};
               ">
@@ -407,6 +511,7 @@ export async function renderPresentationToPdf(
             gap: 40px;
             align-items: ${isTitleSlide ? "center" : "flex-start"};
             justify-content: ${isTitleSlide ? "center" : "flex-start"};
+            overflow: hidden;
           ">
             <!-- Main Content Column -->
             <div style="
@@ -416,10 +521,10 @@ export async function renderPresentationToPdf(
               ${isTitleSlide ? "text-align: center; max-width: 900px;" : ""}
             ">
               <h1 style="
-                font-size: ${isTitleSlide ? "46px" : "32px"};
+                font-size: ${isTitleSlide ? "44px" : "30px"};
                 font-weight: 800;
-                line-height: 1.2;
-                margin: 0 0 ${isTitleSlide ? "28px" : "24px"} 0;
+                line-height: 1.25;
+                margin: 0 0 ${isTitleSlide ? "28px" : "22px"} 0;
                 color: ${isTitleSlide ? "#ffffff" : "#0f172a"};
                 letter-spacing: -0.5px;
               ">
@@ -429,8 +534,9 @@ export async function renderPresentationToPdf(
               ${
                 slide.points.length > 0
                   ? `
-                <div style="display: flex; flex-direction: column; gap: 14px;">
+                <div style="display: flex; flex-direction: column; gap: 12px; max-height: 380px; overflow: hidden;">
                   ${slide.points
+                    .slice(0, 7)
                     .map(
                       (b) => `
                     <div style="
@@ -440,18 +546,18 @@ export async function renderPresentationToPdf(
                       background: ${isTitleSlide ? "rgba(255,255,255,0.06)" : "#f8fafc"};
                       border: 1px solid ${isTitleSlide ? "rgba(255,255,255,0.12)" : "#e2e8f0"};
                       border-radius: 10px;
-                      padding: 14px 18px;
+                      padding: 12px 16px;
                     ">
                       <div style="
                         width: 8px;
                         height: 8px;
                         border-radius: 50%;
                         background: #3b82f6;
-                        margin-top: 8px;
+                        margin-top: 6px;
                         flex-shrink: 0;
                       "></div>
                       <span style="
-                        font-size: 16px;
+                        font-size: 15px;
                         line-height: 1.5;
                         color: ${isTitleSlide ? "#e2e8f0" : "#334155"};
                         font-weight: 500;
@@ -484,10 +590,10 @@ export async function renderPresentationToPdf(
                   overflow: hidden;
                   border: 1px solid ${isTitleSlide ? "rgba(255,255,255,0.15)" : "#e2e8f0"};
                   box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-                  max-height: 420px;
+                  max-height: 400px;
                   display: flex;
                 ">
-                  <img src="${mainImage}" style="max-width: 100%; max-height: 420px; object-fit: contain; display: block;" />
+                  <img src="${mainImage}" style="max-width: 100%; max-height: 400px; object-fit: contain; display: block;" />
                 </div>
               </div>
             `
@@ -500,7 +606,7 @@ export async function renderPresentationToPdf(
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding-top: 18px;
+            padding-top: 16px;
             border-top: 1px solid ${
               isTitleSlide ? "rgba(255,255,255,0.1)" : "#e2e8f0"
             };
@@ -523,13 +629,16 @@ export async function renderPresentationToPdf(
       // Wait a microtick for layout and images to paint
       await new Promise((resolve) => setTimeout(resolve, 80));
 
-      const canvas = await html2canvas(iframeDoc.body, {
+      const canvas = await html2canvas(wrapper, {
         width: renderWidthPx,
         height: renderHeightPx,
         scale: 2.0,
         useCORS: true,
         logging: false,
         backgroundColor: isTitleSlide ? "#0f172a" : "#ffffff",
+        onclone: (clonedDoc) => {
+          sanitizeClonedDoc(clonedDoc);
+        },
       });
 
       const imgData = canvas.toDataURL("image/jpeg", 0.98);
@@ -553,11 +662,42 @@ export async function renderPresentationToPdf(
     onProgress?.(95, "Compiling final PDF payload...");
     return pdf.output("blob");
   } catch (err) {
-    console.warn("renderPresentationToPdf iframe error:", err);
+    console.warn("renderPresentationSlidesViaSandboxHtml error:", err);
   } finally {
-    if (iframe && document.body.contains(iframe)) {
-      document.body.removeChild(iframe);
+    if (wrapper && document.body.contains(wrapper)) {
+      document.body.removeChild(wrapper);
     }
+  }
+
+  return null;
+}
+
+/**
+ * Universal Presentation to PDF entry point:
+ * 1. Attempts high-fidelity PPTX DOM rendering and screenshot stitching
+ * 2. Falls back to isolated sandbox rendering and screenshot stitching for PPT, ODP, and custom presentations
+ */
+export async function renderPresentationToPdf(
+  doc: DocumentIR,
+  options: DocumentConversionOptions = {},
+  onProgress?: (progress: number, text: string) => void
+): Promise<Blob | null> {
+  if (typeof document === "undefined" || typeof window === "undefined") {
+    return null;
+  }
+
+  // 1. If PPTX format with rawBuffer, attempt high-fidelity PPTX DOM rendering
+  if (doc.sourceFormat === "pptx" && doc.rawBuffer) {
+    const pptxPdf = await renderPptxViaPreviewAndCanvas(doc.rawBuffer, options, onProgress);
+    if (pptxPdf && pptxPdf.size > 0) {
+      return pptxPdf;
+    }
+  }
+
+  // 2. High-quality presentation slide sandbox rendering (PPT, ODP, or fallback)
+  const sandboxPdf = await renderPresentationSlidesViaSandboxHtml(doc, options, onProgress);
+  if (sandboxPdf && sandboxPdf.size > 0) {
+    return sandboxPdf;
   }
 
   return null;

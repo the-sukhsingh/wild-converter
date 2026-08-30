@@ -15,7 +15,6 @@
     "@breezystack/lamejs": "^1.2.7",
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@ffmpeg/util": "^0.12.2",
-    "@hckrnews/ppt2pdf": "^0.4.0",
     "@jsquash/avif": "^2.1.1",
     "@jsquash/jpeg": "^1.6.0",
     "@jsquash/oxipng": "^2.3.0",
