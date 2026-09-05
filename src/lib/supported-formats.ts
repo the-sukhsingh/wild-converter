@@ -6,6 +6,7 @@ import { isVectorFile, detectVectorFormat } from "./vector-format-utils";
 import { isThreeDFile, detectThreeDFormat } from "./three-d-format-utils";
 import { isFontFile, detectFontFormat } from "./font-format-utils";
 import { isArchiveFile, detectArchiveFormat } from "./archive-format-utils";
+import { isCodeFile, detectCodeFormat } from "./code-format-utils";
 
 export type ConverterCategory =
   | "images"
@@ -15,7 +16,8 @@ export type ConverterCategory =
   | "vector"
   | "3d"
   | "fonts"
-  | "archive";
+  | "archive"
+  | "code";
 
 /**
  * Checks whether a given file can be converted in the specified category.
@@ -68,6 +70,10 @@ export function isCategorySupported(category: ConverterCategory, file: File | nu
 
     case "archive": {
       return isArchiveFile(file) || detectArchiveFormat(file) !== null;
+    }
+
+    case "code": {
+      return isCodeFile(file) || detectCodeFormat(file) !== null;
     }
 
     default:

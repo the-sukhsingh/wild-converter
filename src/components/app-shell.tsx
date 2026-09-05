@@ -13,6 +13,7 @@ import { isVectorFile } from "@/lib/vector-format-utils";
 import { isThreeDFile } from "@/lib/three-d-format-utils";
 import { isFontFile } from "@/lib/font-format-utils";
 import { isArchiveFile } from "@/lib/archive-format-utils";
+import { isCodeFile } from "@/lib/code-format-utils";
 import { detectFormat } from "@/lib/format-utils";
 
 type ConverterCategory =
@@ -23,7 +24,8 @@ type ConverterCategory =
   | "vector"
   | "3d"
   | "fonts"
-  | "archive";
+  | "archive"
+  | "code";
 
 interface CategoryTab {
   id: ConverterCategory;
@@ -41,6 +43,7 @@ const CATEGORIES: CategoryTab[] = [
   { id: "3d",        label: "3D",       href: "/3d",        engineName: "webgl 3d geometry & buffer engine" },
   { id: "fonts",     label: "Fonts",    href: "/fonts",     engineName: "opentype & woff2 wasm engine" },
   { id: "archive",   label: "Archives", href: "/archive",   engineName: "deflate/tar streaming compressor" },
+  { id: "code",      label: "Code",     href: "/code",      engineName: "client-side syntax AST compiler" },
 ];
 
 // Document extensions that must be checked BEFORE vector (PDF is in VECTOR_FORMATS but belongs to documents)
@@ -60,6 +63,7 @@ function detectCategoryFromFile(file: File): ConverterCategory {
   if (isArchiveFile(file) || ext === "zip" || ext === "tar" || ext === "gz" || ext === "tgz" || ext === "7z" || ext === "rar") return "archive";
   if (isAudioFile(file) || mime.startsWith("audio/")) return "audio";
   if (isVideoFile(file) || mime.startsWith("video/")) return "video";
+  if (isCodeFile(file)) return "code";
   // Check images before vector (SVG has image/ MIME type)
   if (detectFormat(file) !== null || (mime.startsWith("image/") && !mime.includes("svg"))) return "images";
   if (isVectorFile(file) || ext === "svg" || ext === "eps" || ext === "ai" || ext === "dxf" || ext === "cdr") return "vector";
@@ -186,7 +190,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       onDragOver={handleGlobalDragOver}
       onDragLeave={handleGlobalDragLeave}
       onDrop={handleGlobalDrop}
-      className={`h-dvh flex flex-col justify-between overflow-hidden bg-(--background) text-(--foreground) selection:bg-(--foreground) selection:text-(--background) relative ${
+      className={`min-h-dvh flex flex-col justify-between overflow-x-clip bg-(--background) text-(--foreground) selection:bg-(--foreground) selection:text-(--background) relative ${
         isDragOver ? "ring-2 ring-(--foreground)/20" : ""
       }`}
     >
@@ -265,7 +269,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* ─── Main Workspace ───────────────────────────────────────── */}
-      <main className="flex-1 flex flex-col overflow-hidden min-h-0 relative">
+      <main className="flex-1 flex flex-col min-h-0 relative overflow-y-auto">
         {children}
       </main>
 
@@ -280,6 +284,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-3 shrink-0 flex-wrap">
+            <Link
+              href="/convert"
+              className="hover:text-(--foreground) transition-colors"
+            >
+              all converters
+            </Link>
+            <span className="text-(--muted-foreground)/40">·</span>
             <a
               href="https://github.com/the-sukhsingh/wild-converter"
               target="_blank"

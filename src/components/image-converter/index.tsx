@@ -37,6 +37,7 @@ interface OnConversionCompletePayload {
 interface ImageConverterProps {
   initialFile?: File | null;
   initialFiles?: File[];
+  initialTargetFormat?: ImageFormat;
   onClearInitialFile?: () => void;
   onConversionComplete?: (payload: OnConversionCompletePayload) => void;
 }
@@ -44,6 +45,7 @@ interface ImageConverterProps {
 export function ImageConverter({
   initialFile,
   initialFiles,
+  initialTargetFormat,
   onClearInitialFile,
   onConversionComplete,
 }: ImageConverterProps = {}) {
@@ -58,7 +60,7 @@ export function ImageConverter({
     initialFiles && initialFiles.length === 1 ? initialFiles[0] : initialFile || null
   );
   const [inputFormat, setInputFormat] = useState<ImageFormat | null>(null);
-  const [targetFormat, setTargetFormat] = useState<ImageFormat>("webp");
+  const [targetFormat, setTargetFormat] = useState<ImageFormat>(initialTargetFormat || "webp");
   const [searchQuery, setSearchQuery] = useState("");
   const [options, setOptions] = useState<ConversionOptions>({
     quality: 0.85,
@@ -86,9 +88,13 @@ export function ImageConverter({
     setFile(f);
     const detected = detectFormat(f);
     setInputFormat(detected);
-    setTargetFormat(detected === "webp" ? "png" : "webp");
+    if (initialTargetFormat && initialTargetFormat !== detected) {
+      setTargetFormat(initialTargetFormat);
+    } else {
+      setTargetFormat(detected === "webp" ? "png" : "webp");
+    }
     setSearchQuery("");
-  }, []);
+  }, [initialTargetFormat]);
 
   const handleFilesSelect = useCallback((files: File[]) => {
     if (files.length > 1) {

@@ -36,6 +36,7 @@ interface OnConversionCompletePayload {
 interface DocumentConverterProps {
   initialFile?: File | null;
   initialFiles?: File[];
+  initialTargetFormat?: DocumentFormat;
   onClearInitialFile?: () => void;
   onConversionComplete?: (payload: OnConversionCompletePayload) => void;
 }
@@ -43,6 +44,7 @@ interface DocumentConverterProps {
 export function DocumentConverter({
   initialFile,
   initialFiles,
+  initialTargetFormat,
   onClearInitialFile,
   onConversionComplete,
 }: DocumentConverterProps = {}) {
@@ -57,7 +59,7 @@ export function DocumentConverter({
     initialFiles && initialFiles.length === 1 ? initialFiles[0] : initialFile || null
   );
   const [inputFormat, setInputFormat] = useState<DocumentFormat | null>(null);
-  const [targetFormat, setTargetFormat] = useState<DocumentFormat>("pdf");
+  const [targetFormat, setTargetFormat] = useState<DocumentFormat>(initialTargetFormat || "pdf");
   const [searchQuery, setSearchQuery] = useState("");
   const [options, setOptions] = useState<DocumentConversionOptions>({
     pdfPageSize: "a4",
@@ -92,7 +94,9 @@ export function DocumentConverter({
     const detected = detectDocumentFormat(f);
     setInputFormat(detected);
 
-    if (detected === "pdf") {
+    if (initialTargetFormat && initialTargetFormat !== detected) {
+      setTargetFormat(initialTargetFormat);
+    } else if (detected === "pdf") {
       setTargetFormat("docx");
     } else if (detected === "xlsx" || detected === "xls" || detected === "ods") {
       setTargetFormat("csv");
@@ -103,7 +107,7 @@ export function DocumentConverter({
     setSearchQuery("");
     setConversionResult(null);
     setErrorMsg(null);
-  }, []);
+  }, [initialTargetFormat]);
 
   const handleFilesSelect = useCallback((files: File[]) => {
     if (files.length > 1) {

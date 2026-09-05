@@ -31,6 +31,7 @@ interface OnConversionCompletePayload {
 interface AudioConverterProps {
   initialFile?: File | null;
   initialFiles?: File[];
+  initialTargetFormat?: AudioFormat;
   onClearInitialFile?: () => void;
   onConversionComplete?: (payload: OnConversionCompletePayload) => void;
 }
@@ -38,6 +39,7 @@ interface AudioConverterProps {
 export function AudioConverter({
   initialFile,
   initialFiles,
+  initialTargetFormat,
   onClearInitialFile,
   onConversionComplete,
 }: AudioConverterProps = {}) {
@@ -50,10 +52,10 @@ export function AudioConverter({
   );
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
   const [metadata, setMetadata] = useState<AudioMetadata | null>(null);
-  const [targetFormat, setTargetFormat] = useState<AudioFormat>("mp3");
+  const [targetFormat, setTargetFormat] = useState<AudioFormat>(initialTargetFormat || "mp3");
   const [searchQuery, setSearchQuery] = useState("");
   const [options, setOptions] = useState<AudioConversionOptions>({
-    format: "mp3",
+    format: initialTargetFormat || "mp3",
     bitrate: 256,
     sampleRate: 44100,
     channels: 2,
