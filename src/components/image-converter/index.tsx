@@ -22,6 +22,7 @@ import { ActionBar } from "./action-bar";
 import { BatchTable } from "@/components/batch-converter/batch-table";
 import { ImageToPdfWorkspace } from "@/components/batch-converter/image-to-pdf-workspace";
 import { Layers, Images } from "lucide-react";
+import { ConversionErrorBanner } from "@/components/conversion-error-banner";
 
 type ConvertState = "idle" | "converting" | "done" | "error";
 
@@ -347,9 +348,14 @@ export function ImageConverter({
             />
 
             {errorMsg && (
-              <div className="text-xs font-mono text-destructive">
-                {errorMsg}
-              </div>
+              <ConversionErrorBanner
+                errorMsg={errorMsg}
+                category="images"
+                sourceFormat={file?.name.split(".").pop() || "image"}
+                targetFormat={targetFormat}
+                fileName={file?.name}
+                fileSize={file?.size}
+              />
             )}
           </div>
         )}

@@ -1,0 +1,80 @@
+name: Conversion Bug Report
+description: Report an error, failure, or unexpected behavior during file conversion
+title: "[Bug]: Conversion error from <SOURCE> to <TARGET>"
+labels: ["bug", "conversion"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to report this conversion issue!
+        Wild Converter runs 100% in your browser using client-side WebAssembly, so your environment details help us reproduce and fix the bug quickly.
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Conversion Category
+      description: Which converter category were you using?
+      options:
+        - Images
+        - Documents
+        - Audio
+        - Video
+        - Vectors
+        - 3D Models
+        - Fonts
+        - Archives
+        - Code & Data
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: source_format
+    attributes:
+      label: Source File Format
+      description: What was the original format of the file you tried to convert? (e.g., PPTX, PNG, HEIC, MKV, OBJ)
+      placeholder: e.g. PPTX
+    validations:
+      required: true
+
+  - type: input
+    id: target_format
+    attributes:
+      label: Target File Format
+      description: What format were you trying to convert it into? (e.g., PDF, WebP, MP4, STL)
+      placeholder: e.g. PDF
+    validations:
+      required: true
+
+  - type: textarea
+    id: error_message
+    attributes:
+      label: Error Message or Status
+      description: Paste any error text or status displayed in the application or browser console.
+      placeholder: e.g. "Conversion failed: Memory allocation error in WASM module"
+      render: shell
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Problem Description & Steps to Reproduce
+      description: Describe what happened and the steps to reproduce the issue.
+      placeholder: |
+        1. Uploaded sample presentation (.pptx)
+        2. Selected target format PDF
+        3. Clicked "Convert"
+        4. Progress reached 80% then failed with error...
+    validations:
+      required: false
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Browser & System Information
+      description: Which browser and OS are you using?
+      placeholder: |
+        - OS: Windows 11 / macOS Sonoma / Ubuntu 24.04
+        - Browser: Chrome 133 / Firefox 135 / Safari 18
+        - Device: Desktop / Laptop / Mobile
+    validations:
+      required: false

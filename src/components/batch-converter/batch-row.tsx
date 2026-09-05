@@ -25,7 +25,9 @@ import {
   Type,
   Layers,
   GripVertical,
+  Bug,
 } from "lucide-react";
+import { useReportIssue } from "@/lib/report-issue-context";
 
 interface BatchRowProps {
   item: BatchItem;
@@ -72,6 +74,7 @@ export function BatchRow({
   onDragEnd,
   index,
 }: BatchRowProps) {
+  const { openReportIssue } = useReportIssue();
   const availableFormats = useMemo(
     () => getAvailableTargetFormats(item.category),
     [item.category]
@@ -271,15 +274,36 @@ export function BatchRow({
             )}
 
             {item.status === "error" && (
-              <button
-                type="button"
-                title="Retry conversion"
-                onClick={() => onRetry(item)}
-                className="h-7.5 px-2.5 py-1 text-xs font-mono font-medium rounded-md bg-destructive text-destructive-foreground hover:opacity-90 transition-opacity flex items-center gap-1 cursor-pointer"
-              >
-                <RotateCw className="w-3 h-3" />
-                <span>Retry</span>
-              </button>
+              <>
+                <button
+                  type="button"
+                  title="Report this error on GitHub"
+                  onClick={() =>
+                    openReportIssue({
+                      category: item.category,
+                      sourceFormat: item.file.name.split(".").pop() || item.category,
+                      targetFormat: item.targetFormat,
+                      errorMessage: item.error || "Conversion failed",
+                      fileName: item.file.name,
+                      fileSize: item.file.size,
+                    })
+                  }
+                  className="h-7.5 px-2 py-1 text-xs font-mono font-medium rounded-md border border-rose-500/30 bg-rose-500/15 hover:bg-rose-500/25 text-rose-600 dark:text-rose-400 transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  <Bug className="w-3 h-3" />
+                  <span className="hidden sm:inline">Report</span>
+                </button>
+
+                <button
+                  type="button"
+                  title="Retry conversion"
+                  onClick={() => onRetry(item)}
+                  className="h-7.5 px-2.5 py-1 text-xs font-mono font-medium rounded-md bg-destructive text-destructive-foreground hover:opacity-90 transition-opacity flex items-center gap-1 cursor-pointer"
+                >
+                  <RotateCw className="w-3 h-3" />
+                  <span>Retry</span>
+                </button>
+              </>
             )}
 
             <button

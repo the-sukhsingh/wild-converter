@@ -23,6 +23,7 @@ import { DocumentPreviewModal } from "./document-preview-modal";
 import { BatchTable } from "@/components/batch-converter/batch-table";
 import { PdfToImageWorkspace } from "@/components/batch-converter/pdf-to-image-workspace";
 import { FileStack } from "lucide-react";
+import { ConversionErrorBanner } from "@/components/conversion-error-banner";
 
 interface OnConversionCompletePayload {
   inputFileName: string;
@@ -370,9 +371,14 @@ export function DocumentConverter({
             />
 
             {errorMsg && (
-              <div className="text-xs font-mono text-destructive">
-                {errorMsg}
-              </div>
+              <ConversionErrorBanner
+                errorMsg={errorMsg}
+                category="documents"
+                sourceFormat={file?.name.split(".").pop() || "doc"}
+                targetFormat={targetFormat}
+                fileName={file?.name}
+                fileSize={file?.size}
+              />
             )}
           </div>
         )}

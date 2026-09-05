@@ -18,6 +18,7 @@ import { VideoHeader } from "./video-header";
 import { VideoFormatSelector } from "./video-format-selector";
 import { VideoOptionsPanel } from "./video-options";
 import { VideoActionBar } from "./video-action-bar";
+import { ConversionErrorBanner } from "@/components/conversion-error-banner";
 
 interface OnConversionCompletePayload {
   inputFileName: string;
@@ -284,9 +285,14 @@ export function VideoConverter({
             />
 
             {errorMsg && (
-              <div className="text-xs font-mono text-destructive">
-                {errorMsg}
-              </div>
+              <ConversionErrorBanner
+                errorMsg={errorMsg}
+                category="video"
+                sourceFormat={file?.name.split(".").pop() || "video"}
+                targetFormat={targetFormat}
+                fileName={file?.name}
+                fileSize={file?.size}
+              />
             )}
           </div>
         )}

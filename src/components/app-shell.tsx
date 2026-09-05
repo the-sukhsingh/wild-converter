@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useDroppedFile } from "@/lib/dropped-file-context";
+import { useReportIssue } from "@/lib/report-issue-context";
 
 import { isAudioFile } from "@/lib/audio-format-utils";
 import { isVideoFile } from "@/lib/video-format-utils";
@@ -67,10 +68,25 @@ function detectCategoryFromFile(file: File): ConverterCategory {
   return "documents";
 }
 
+function GithubIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg
+      role="img"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+    </svg>
+  );
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { setDroppedFiles } = useDroppedFile();
+  const { openReportIssue } = useReportIssue();
   const [isDragOver, setIsDragOver] = useState(false);
 
   // ── Feature 1: Clipboard paste ──────────────────────────────────────────
@@ -210,6 +226,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           {/* Action Icons */}
           <div className="shrink-0 flex items-center gap-1">
+            <a
+              href="https://github.com/the-sukhsingh/wild-converter"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center w-8 h-8 rounded-md text-(--muted-foreground) hover:text-(--foreground) hover:bg-(--muted)/50 transition-colors focus-visible:outline-2 focus-visible:outline-(--ring) focus-visible:outline-offset-2"
+              aria-label="GitHub repository"
+              title="GitHub repository"
+            >
+              <GithubIcon className="w-4 h-4" />
+            </a>
             <ThemeToggle />
           </div>
         </div>
@@ -244,10 +270,57 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </main>
 
       {/* ─── Footer ───────────────────────────────────────────────── */}
-      <footer className="shrink-0 h-9 sm:h-10 border-t border-(--border) bg-(--background) z-50">
-        <div className="w-full max-w-5xl h-full mx-auto px-4 md:px-8 flex items-center justify-between text-[11px] sm:text-xs font-mono text-(--muted-foreground)">
-          <span className="truncate max-w-70 sm:max-w-none">wild · {engineName}</span>
-          <span className="hidden sm:inline shrink-0">100% private · zero server uploads</span>
+      <footer className="shrink-0 border-t border-(--border) bg-(--background) z-50">
+        <div className="w-full max-w-5xl mx-auto px-4 md:px-8 py-2 sm:h-10 sm:py-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] sm:text-xs font-mono text-(--muted-foreground)">
+          <div className="flex items-center gap-2 truncate">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" title="Engine active" />
+            <span className="truncate">wild · {engineName}</span>
+            <span className="hidden md:inline text-(--muted-foreground)/40">/</span>
+            <span className="hidden md:inline shrink-0">100% private · client-side wasm</span>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0 flex-wrap">
+            <a
+              href="https://github.com/the-sukhsingh/wild-converter"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 hover:text-(--foreground) transition-colors"
+            >
+              <GithubIcon className="w-3.5 h-3.5" />
+              <span>github</span>
+            </a>
+            <span className="text-(--muted-foreground)/40">·</span>
+            <a
+              href="https://github.com/the-sukhsingh/wild-converter/blob/master/CONTRIBUTING.md"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-(--foreground) transition-colors"
+            >
+              contribute
+            </a>
+            <span className="text-(--muted-foreground)/40">·</span>
+            <a
+              href="https://github.com/the-sukhsingh/wild-converter/blob/master/LICENSE"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-(--foreground) transition-colors"
+            >
+              mit license
+            </a>
+            <span className="text-(--muted-foreground)/40">·</span>
+            <button
+              type="button"
+              onClick={() => {
+                const rawCat = pathname.replace("/", "").split("/")[0];
+                openReportIssue({
+                  category: rawCat && rawCat !== "" ? rawCat : undefined,
+                });
+              }}
+              className="hover:text-rose-500 transition-colors cursor-pointer"
+            >
+              report issue
+            </button>
+          </div>
         </div>
       </footer>
     </div>
